@@ -1,0 +1,45 @@
+.mainHead {
+    grid-area: header;
+    text-align: center;
+    font-weight: bold;
+    font-size: large;
+}
+.graphDisplay {
+    grid-area: graphDisplay;
+    border-style: solid;
+}
+
+.graphDisplay li.selected {
+    color: #00EE22;
+}
+
+.nodeEditor {
+    grid-area: nodeEditor;
+    border-style: double;
+}
+
+.mainFooter {
+    grid-area: footer;
+    font-size: small;
+    font-weight: lighter;
+}
+
+.editor {
+    display: grid;
+    grid-gap: 20px;
+    grid-template-areas:
+            "header"
+            "graphDisplay"
+            "nodeEditor"
+            "footer";
+}
+
+@media (min-width: 500px) {
+    .editor {
+        grid-template-columns: 3fr 2fr;
+        grid-template-areas:
+                "header       header"
+                "graphDisplay nodeEditor"
+                "footer       footer";
+    }
+}
