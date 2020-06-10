@@ -1,3 +1,31 @@
+Belief Workbench
+=================
+
+A tool to help people surface their assumptions and formalize their
+reasoning so they can calculate how much they should believe in
+something and share it with others who can make suggestions.
+
+Its basic form is an editor for a Bayesian network encoding a
+generative distribution with documentation giving justification for
+each node. From there, the users can run analyses to see the resulting
+distribuions on the output variables.
+
+Each network needs to have a human language in which it is
+written. This will cover the node names, their descriptions, and any
+other natural language text.
+
+The first version will have collaboration via git repository. We'll
+see what requests users have.
+
+TODO
+----
+* Make justification allow for a link to one or more models (maybe with text accompanying the link)
+* Localize the UI
+
+
+From [Create React App](https://github.com/facebook/create-react-app)
+=====================================================================
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts

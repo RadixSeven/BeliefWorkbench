@@ -1,7 +1,12 @@
 {
   "name": "belief-workbench",
-  "version": "0.1.0",
+  "version": "0.0.1",
+  "keywords": [],
+  "author": "",
+  "license": "GPL-3.0-or-later",
   "private": true,
+  "description": "Belief Workbench",
+  "main": "index.js",
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
