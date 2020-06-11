@@ -1,0 +1,10 @@
+*.js text=auto
+*.ts text=auto
+*.json text=auto
+*.cpp text=auto
+*.tsx text=auto
+*.xml text=auto
+*.jsx text=auto
+*.txt text=auto
+*.md text=auto
+
