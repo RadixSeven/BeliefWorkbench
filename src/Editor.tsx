@@ -1,6 +1,11 @@
 import React from "react";
-import {Nodes, DistributionType} from "./nodes_type"
+import * as Network from "./nodes_type"
 import './Editor.css';
+
+type Nodes = Network.Nodes;
+type Node = Network.Node;
+type DistributionType = Network.DistributionType;
+type Distribution = Network.Distribution;
 
 const GraphDisplay = ({nodes, selectedNodeId, language} : {nodes: Nodes, selectedNodeId: string, language: string})  =>
     <section className="graphDisplay">
@@ -14,7 +19,13 @@ const GraphDisplay = ({nodes, selectedNodeId, language} : {nodes: Nodes, selecte
         }</ul>
     </section>;
 
-const distributions = {
+type DistributionPropertyMap = {
+    [distributionType in DistributionType]: {
+        name: string;
+    };
+};
+
+const distributions : DistributionPropertyMap = {
     "discreteUniform": {
         "name": "Discrete Uniform"
     },
@@ -28,13 +39,13 @@ const distName = (distId: DistributionType) =>
 
 const DistributionOptions = () =>
     <React.Fragment>{
-        Object.entries(distributions).map(
-            ([distId]:[DistributionType]) =>
+        Object.keys(distributions).map(
+            (distId) =>
                 <option value={distId} key={distId}>
-                    {distName(distId)}</option>)
+                    {distName(distId as DistributionType)}</option>)
     }</React.Fragment>;
 
-const NodeDistributionEditor = ({distribution}) =>
+const NodeDistributionEditor = ({distribution}:{distribution: Distribution}) =>
     <React.Fragment>
         <label htmlFor="distribution">Distribution</label>
         <select name="distribution" id="distribution"
@@ -43,7 +54,7 @@ const NodeDistributionEditor = ({distribution}) =>
         </select>
     </React.Fragment>
 
-const NodeEditor = ({node, language}) =>
+const NodeEditor = ({node, language}:{node:Node, language: string}) =>
     <section className="nodeEditor">
         <form>
             <NodeDistributionEditor distribution={node.distribution}/>
@@ -56,7 +67,7 @@ const NodeEditor = ({node, language}) =>
         </form>
     </section>;
 
-const Editor = ({nodes, language, modelName, selection, version}) =>
+const Editor = ({nodes, language, modelName, selection, version}: {nodes: Nodes, language: string, modelName: string, selection: string, version: string}) =>
     <main className="editor">
         <header className="mainHead" lang={language}>{modelName}: Belief Workbench {version}</header>
         <GraphDisplay nodes={nodes} selectedNodeId={selection} language={language}/>

@@ -1,19 +1,19 @@
-type DistributionType = "continuousUniform" | "discreteUniform";
+export type DistributionType = "continuousUniform" | "discreteUniform";
 
-export interface Node = {
-    distribution: {
-        type: DistributionType,
-        outputType: "double" | "int",
-        min?: double,
-        max?: double,
-        choices?: int[] | string[] | double[],
-    }
+export interface Distribution {
+    type: DistributionType,
+    outputType: "double" | "int",
+    min?: number,
+    max?: number,
+    choices?: number[] | string[]
+}
+
+export interface Node {
+    distribution: Distribution,
     title: string,
     justification: string
-};
+}
 
-export interface Nodes = {
+export interface Nodes {
     [node_id: string]: Node
-};
-
-export = DistributionType;
+}

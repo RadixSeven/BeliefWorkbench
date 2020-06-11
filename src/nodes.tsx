@@ -1,4 +1,4 @@
-import Nodes from './nodes_type'
+import {Nodes} from './nodes_type'
 
 const nodes : Nodes = {
     "xyz": {
