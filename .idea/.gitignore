@@ -1,2 +1,9 @@
 # Default ignored files
-/workspace.xml
+workspace.xml
+tasks.xml
+usage.statistics.xml
+dictionaries
+shelf
+modules.xml
+modules
+BeliefWorkbench.iml
