@@ -22,6 +22,9 @@ TODO
 * Make justification allow for a link to one or more models (maybe with text accompanying the link)
 * Localize the UI
 
+Acknowledgements
+----------------
+The logo is modified from: [Twemoji2_1f914.svg on the Wikipedia Commons](https://commons.wikimedia.org/wiki/File:Twemoji2_1f914.svg) [Twitter / CC BY](https://creativecommons.org/licenses/by/4.0)
 
 From [Create React App](https://github.com/facebook/create-react-app)
 =====================================================================
