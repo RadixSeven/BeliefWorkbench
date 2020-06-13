@@ -14,7 +14,7 @@ ReactDOM.render(
         language={language}
         modelName={modelName}
         version="v0.01"
-        selection="xyz"
+        selection={Object.keys(nodes)[0]}
     />,
   </React.StrictMode>,
   document.getElementById("react-container")
