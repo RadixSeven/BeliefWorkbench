@@ -32,6 +32,7 @@ const initialState: WorkbenchState = {
 enum CommandType {
   NoOp,
   SelectNode,
+  MoveNode,
 }
 interface Command {
   type: CommandType;
@@ -47,11 +48,29 @@ interface SelectNodeCommand extends Command {
   newSelection: string;
 }
 
+interface MoveNodeCommand extends Command {
+  type: CommandType.MoveNode;
+  nodeId: string;
+  newCoords: number[];
+}
+
 const selectNode: WorkbenchReducer = (oldState, action) => ({
   beliefs: { ...oldState.beliefs },
   ...oldState,
   selection: (action as SelectNodeCommand).newSelection,
 });
+
+const moveNode: WorkbenchReducer = (oldState, action) => {
+  let newObj: WorkbenchState = {
+    beliefs: {
+      ...oldState.beliefs,
+    },
+    ...oldState,
+  };
+  const a = action as MoveNodeCommand;
+  newObj.beliefs.nodes[a.nodeId].coords = a.newCoords;
+  return newObj;
+};
 
 type DispatchTable = WorkbenchReducer[];
 const dispatchTable = createDispatchTable();
@@ -59,6 +78,7 @@ function createDispatchTable() {
   let dispatchTable: DispatchTable = [];
   dispatchTable[CommandType.NoOp] = (state, _action) => state;
   dispatchTable[CommandType.SelectNode] = selectNode;
+  dispatchTable[CommandType.MoveNode] = moveNode;
   return dispatchTable;
 }
 
@@ -72,6 +92,14 @@ function createDispatchers(dispatch: React.Dispatch<Command>) {
       const cmd: SelectNodeCommand = {
         type: CommandType.SelectNode,
         newSelection: newSelection,
+      };
+      return dispatch(cmd);
+    },
+    dispatchMoveNode: (nodeId: string, newCoords: number[]) => {
+      const cmd: MoveNodeCommand = {
+        type: CommandType.MoveNode,
+        newCoords: newCoords,
+        nodeId: nodeId,
       };
       return dispatch(cmd);
     },

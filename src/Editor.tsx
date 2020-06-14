@@ -68,6 +68,41 @@ function beautifulDiagramsSchema(nodes: Nodes): DiagramSchema.DiagramSchema {
   };
 }
 
+type NodeMovement = {
+  nodeId: string;
+  newCoords: number[];
+};
+
+function nodeMovements(
+  oldSchema: DiagramSchema.DiagramSchema,
+  newSchema: DiagramSchema.DiagramSchema
+): NodeMovement[] {
+  const oldCoords = Object.fromEntries(
+    oldSchema.nodes.map((node) => [node.id, node.coordinates])
+  );
+  const newCoords = Object.fromEntries(
+    newSchema.nodes.map((node) => [node.id, node.coordinates])
+  );
+  const movedNodeIds = Object.keys(oldCoords).filter(
+    (id) => id in oldCoords && oldCoords[id] !== newCoords[id]
+  );
+  return movedNodeIds.map((id) => ({
+    nodeId: id,
+    newCoords: newCoords[id] as number[],
+  }));
+}
+
+type ChangeHandlerType = (
+  oldSchema: DiagramSchema.DiagramSchema,
+  dispatchMoveNode: (nodeId: string, newCoords: number[]) => void
+) => (schema: DiagramSchema.DiagramSchema) => void;
+const changeHandler: ChangeHandlerType = (oldSchema, dispatchMoveNode) => {
+  return (newSchema) => {
+    const nodeMoves = nodeMovements(oldSchema, newSchema);
+    nodeMoves.forEach((m) => dispatchMoveNode(m.nodeId, m.newCoords));
+  };
+};
+
 const GraphDisplay = ({
   nodes,
   selectedNodeId,
@@ -77,10 +112,14 @@ const GraphDisplay = ({
   selectedNodeId: string | null;
   language: string;
 }) => {
-  const { dispatchSelectNode } = useContext(DispatchContext);
+  const { dispatchSelectNode, dispatchMoveNode } = useContext(DispatchContext);
+  const schema = beautifulDiagramsSchema(nodes);
   return (
     <section className="graphDisplay">
-      <Diagram schema={beautifulDiagramsSchema(nodes)} />
+      <Diagram
+        schema={schema}
+        onChange={changeHandler(schema, dispatchMoveNode)}
+      />
     </section>
   );
 };
