@@ -33,6 +33,7 @@ enum CommandType {
   NoOp,
   SelectNode,
   MoveNode,
+  LinkNodes,
 }
 interface Command {
   type: CommandType;
@@ -54,6 +55,22 @@ interface MoveNodeCommand extends Command {
   newCoords: number[];
 }
 
+interface LinkNodesCommand extends Command {
+  type: CommandType.LinkNodes;
+  /**
+   * The node at whose output the link starts
+   */
+  fromNodeId: string;
+  /**
+   * The node at whose input the link terminates
+   */
+  toNodeId: string;
+  /**
+   * The id of the input at which the link terminates
+   */
+  toInputId: string;
+}
+
 const selectNode: WorkbenchReducer = (oldState, action) => ({
   beliefs: { ...oldState.beliefs },
   ...oldState,
@@ -72,6 +89,25 @@ const moveNode: WorkbenchReducer = (oldState, action) => {
   return newObj;
 };
 
+const linkNode: WorkbenchReducer = (oldState, action) => {
+  let newObj: WorkbenchState = {
+    beliefs: {
+      // Just realized this is a shallow copy ... I need to use Immer
+      ...oldState.beliefs,
+    },
+    ...oldState,
+  };
+  const a = action as LinkNodesCommand;
+  const child = newObj.beliefs.nodes[a.toNodeId];
+  if ("parents" in child) {
+    const parentIds = child.parents[a.toInputId];
+    if (!(a.fromNodeId in parentIds)) {
+      parentIds.push(a.fromNodeId);
+    }
+  }
+  return newObj;
+};
+
 type DispatchTable = WorkbenchReducer[];
 const dispatchTable = createDispatchTable();
 function createDispatchTable() {
@@ -79,6 +115,7 @@ function createDispatchTable() {
   dispatchTable[CommandType.NoOp] = (state, _action) => state;
   dispatchTable[CommandType.SelectNode] = selectNode;
   dispatchTable[CommandType.MoveNode] = moveNode;
+  dispatchTable[CommandType.LinkNodes] = linkNode;
   return dispatchTable;
 }
 
@@ -100,6 +137,19 @@ function createDispatchers(dispatch: React.Dispatch<Command>) {
         type: CommandType.MoveNode,
         newCoords: newCoords,
         nodeId: nodeId,
+      };
+      return dispatch(cmd);
+    },
+    dispatchLinkNodes: (
+      fromNodeId: string,
+      toNodeId: string,
+      toInputId: string
+    ) => {
+      const cmd: LinkNodesCommand = {
+        fromNodeId: fromNodeId,
+        toNodeId: toNodeId,
+        toInputId: toInputId,
+        type: CommandType.LinkNodes,
       };
       return dispatch(cmd);
     },
