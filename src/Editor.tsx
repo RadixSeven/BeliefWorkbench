@@ -1,3 +1,4 @@
+import { Set as ISet, Record, List } from "immutable";
 import React, { ReactElement, ReactNode, useContext } from "react";
 import * as Network from "./nodes_type";
 import "./Editor.css";
@@ -26,18 +27,101 @@ function nodeContent(
 }
 
 /// Return the name of the input "port" for "paramName" on node "title"
-function nodeInputName(title: string, paramName: string): string {
-  return `${title}-input-${paramName}`;
+function nodeInputPortName(title: string, paramName: string): string {
+  return `${encodeURIComponent(title)}:input:${encodeURIComponent(paramName)}`;
 }
 
-function nodeOutputName(title: string): string {
-  return `${title}-output`;
+const matchesInputPortRegex = /^[^:]+:input:[^:]+$/;
+function isInputPort(portName: string): boolean {
+  return !!portName.match(matchesInputPortRegex);
+}
+
+/**
+ * Extract a string encoded in the port name and return its decoded version or
+ * null if it can't find it.
+ *
+ * @param portName the name of the Port being used by beautiful-react-diagrams
+ * @param regex the regex applied to portName to do the extraction. It should only use delimiters that won't be in the result of encodeURIComponent
+ * @param groupName the name of a capturing group from the regex. The regex should ensure that this group will be there
+ * @param whatLookingFor a text string to be included in the error message "Could not find ${whatLookingFor}"
+ */
+function extractFromPortName(
+  portName: string,
+  regex: RegExp,
+  groupName: string,
+  whatLookingFor: string
+): string | null {
+  const matches = portName.match(regex);
+  return matches &&
+    "groups" in matches &&
+    matches.groups &&
+    groupName in matches.groups
+    ? decodeURIComponent(matches.groups[groupName])
+    : null;
+}
+
+const captureEncodedNodeIdFromInputPortName = /^(?<nodeId>.*):input:/;
+
+/**
+ * Return the node ID encoded in portName (or null if it can't find it)
+ *
+ * @param portName the port to decode
+ */
+function nodeIdFromInputPortName(portName: string): string | null {
+  return extractFromPortName(
+    portName,
+    captureEncodedNodeIdFromInputPortName,
+    "nodeId",
+    "node ID"
+  );
+}
+
+const captureEncodedInputIdFromInputPortName = /:input:(?<inputId>.*)$/;
+
+/**
+ * Return the input ID encoded in portName  (or null if it can't find
+ * it)
+ *
+ * @param portName the port to decode
+ */
+function inputIdFromInputPortName(portName: string): string | null {
+  return extractFromPortName(
+    portName,
+    captureEncodedInputIdFromInputPortName,
+    "inputId",
+    "input ID"
+  );
+}
+
+function nodeOutputPortName(title: string): string {
+  return `${encodeURIComponent(title)}:output`;
+}
+const matchesOutputPortRegex = /^[^:]+:output$/;
+function isOutputPort(portName: string): boolean {
+  return !!portName.match(matchesOutputPortRegex);
+}
+
+const captureNodeIdFromOutputPortName = /^(?<nodeId>.*):output$/;
+
+/**
+ * Return the output ID encoded in portName  (or null if it can't find
+ * it)
+ *
+ * @param portName the port to decode
+ */
+function nodeIdFromOutputPortName(portName: string): string | null {
+  return extractFromPortName(
+    portName,
+    captureNodeIdFromOutputPortName,
+    "nodeId",
+    "node ID"
+  );
 }
 
 function nodeInputs(title: string, node: Network.Node): DiagramSchema.Port[] {
   return "parents" in node
     ? Object.keys(node.parents).map((name) => ({
-        id: nodeInputName(title, name),
+        id: nodeInputPortName(title, name),
         canLink: () => true,
         alignment: "top",
       }))
@@ -54,7 +138,7 @@ function beautifulDiagramsNode([title, node]: [
     content: nodeContent(title, node),
     inputs: nodeInputs(title, node),
     outputs: [
-      { id: nodeOutputName(title), canLink: () => true, alignment: "top" },
+      { id: nodeOutputPortName(title), canLink: () => true, alignment: "top" },
     ],
   };
 }
@@ -71,8 +155,8 @@ function beautifulDiagramsNodeInputLinks(
   inputName: string
 ): DiagramSchema.Link[] {
   return parentNames.map((parentName) => ({
-    input: nodeOutputName(parentName),
-    output: nodeInputName(title, inputName),
+    input: nodeOutputPortName(parentName),
+    output: nodeInputPortName(title, inputName),
     readonly: false,
     label: parentNames.length > 1 ? `${inputName}(${parentName})` : inputName,
   }));
@@ -128,14 +212,121 @@ function nodeMovements(
   }));
 }
 
+type Linkage = {
+  fromNodeId: string;
+  toNodeId: string;
+  toInputId: string;
+};
+
+const linkageRecordDefaults: Linkage = {
+  fromNodeId: "",
+  toNodeId: "",
+  toInputId: "",
+};
+const LinkageRecord = Record(linkageRecordDefaults);
+
+/**
+ * Given two ports sort them into a pair for link input and output. If they
+ * cannot be sorted, (i.e. they are both inputs or both outputs),
+ * set bad to true in the result.
+ * @param port1 the first port
+ * @param port2 the second port
+ */
+function sortInputsAndOutputs(
+  port1: string,
+  port2: string
+): { input: string; output: string; bad: boolean } {
+  if (isOutputPort(port1)) {
+    if (isInputPort(port2)) {
+      return { input: port1, output: port2, bad: false };
+    } else {
+      return { input: port1, output: port2, bad: true };
+    }
+  } else if (isOutputPort(port2) && isInputPort(port1)) {
+    return { input: port2, output: port1, bad: false };
+  } else {
+    return { input: port1, output: port2, bad: true };
+  }
+}
+
+/**
+ * Extracts parameters of Linkage from DiagramSchema.Link
+ * On success, returns a singleton array containing the extracted
+ * value. Otherwise, returns an empty array. This can be flat-mapped
+ * over to eliminate the bad extractions. (Ideally there will be none
+ * but we're encoding and decoding metadata in id strings which is
+ * error-prone, so I'm trying to make this a little more robust.)
+ * @param link the link from which to extract the parameters
+ */
+function linkToLinkage(link: DiagramSchema.Link): List<Record<Linkage>> {
+  // Reverse inputs and outputs if the user connected them backward.
+  const { input, output, bad } = sortInputsAndOutputs(link.input, link.output);
+  if (bad) {
+    return List();
+  }
+
+  // Create the Linkage record
+  const fromNodeId = nodeIdFromOutputPortName(input);
+  const toNodeId = nodeIdFromInputPortName(output);
+  const toInputId = inputIdFromInputPortName(output);
+  if (toNodeId && fromNodeId && toInputId) {
+    return List([
+      LinkageRecord({
+        fromNodeId: fromNodeId,
+        toInputId: toInputId,
+        toNodeId: toNodeId,
+      }),
+    ]);
+  }
+  console.warn(
+    `Could not extract linkage from ${JSON.stringify(
+      link
+    )}. Skipping. This could result in link deletions or additions.`
+  );
+  return List();
+}
+
+function linkagesArray(
+  schema: DiagramSchema.DiagramSchema
+): List<Record<Linkage>> {
+  return "links" in schema && schema.links
+    ? List(schema.links).flatMap(linkToLinkage)
+    : List();
+}
+
+function linkages(schema: DiagramSchema.DiagramSchema): ISet<Record<Linkage>> {
+  return ISet(linkagesArray(schema));
+}
+
 type ChangeHandlerType = (
   oldSchema: DiagramSchema.DiagramSchema,
-  dispatchMoveNode: (nodeId: string, newCoords: number[]) => void
+  dispatchMoveNode: (nodeId: string, newCoords: number[]) => void,
+  dispatchLinkNodes: (
+    fromNodeId: string,
+    toNodeId: string,
+    toInputId: string
+  ) => void
 ) => (schema: DiagramSchema.DiagramSchema) => void;
-const changeHandler: ChangeHandlerType = (oldSchema, dispatchMoveNode) => {
+
+const changeHandler: ChangeHandlerType = (
+  oldSchema,
+  dispatchMoveNode,
+  dispatchLinkNodes
+) => {
   return (newSchema) => {
     const nodeMoves = nodeMovements(oldSchema, newSchema);
     nodeMoves.forEach((m) => dispatchMoveNode(m.nodeId, m.newCoords));
+    const oldLinks = linkages(oldSchema);
+    const newLinks = linkages(newSchema);
+    const addedLinks = newLinks.subtract(oldLinks);
+    addedLinks.forEach((l) =>
+      dispatchLinkNodes(
+        l.get("fromNodeId"),
+        l.get("toNodeId"),
+        l.get("toInputId")
+      )
+    );
+    //    const removedLinks = oldLinks.subtract(newLinks);
   };
 };
 
@@ -148,13 +339,17 @@ const GraphDisplay = ({
   selectedNodeId: string | null;
   language: string;
 }) => {
-  const { dispatchSelectNode, dispatchMoveNode } = useContext(DispatchContext);
+  const {
+    dispatchSelectNode,
+    dispatchMoveNode,
+    dispatchLinkNodes,
+  } = useContext(DispatchContext);
   const schema = beautifulDiagramsSchema(nodes);
   return (
     <section className="graphDisplay">
       <Diagram
         schema={schema}
-        onChange={changeHandler(schema, dispatchMoveNode)}
+        onChange={changeHandler(schema, dispatchMoveNode, dispatchLinkNodes)}
       />
     </section>
   );
