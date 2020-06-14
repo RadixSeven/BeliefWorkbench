@@ -1,105 +1,123 @@
-import React, {useReducer} from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import Editor from './Editor';
-import nodes from './nodes';
-import * as Network from './nodes_type';
+import React, { useReducer } from "react";
+import ReactDOM from "react-dom";
+import "./index.css";
+import Editor from "./Editor";
+import nodes from "./nodes";
+import * as Network from "./nodes_type";
 
 type WorkbenchState = {
-    /// The beliefs being edited
-    beliefs: {
-        nodes: Network.Nodes;
-        language: string;
-        modelName: string;
-    }
-    /// The key of the currently selected node in beliefs.Nodes
-    selection: string | null;
-    /// The URL for storing the current beliefs
-    currentURL: string | null;
-}
+  /// The beliefs being edited
+  beliefs: {
+    nodes: Network.Nodes;
+    language: string;
+    modelName: string;
+  };
+  /// The key of the currently selected node in beliefs.Nodes
+  selection: string | null;
+  /// The URL for storing the current beliefs
+  currentURL: string | null;
+};
 
-const initialState : WorkbenchState = {
-    "beliefs": {
-        "nodes": nodes,
-        "language": "en-US",
-        "modelName": "Demo Model"
-    },
-    "selection": null,
-    "currentURL": null
+const initialState: WorkbenchState = {
+  beliefs: {
+    nodes: nodes,
+    language: "en-US",
+    modelName: "Demo Model",
+  },
+  selection: null,
+  currentURL: null,
 };
 
 enum CommandType {
-    NoOp,
-    SelectNode
+  NoOp,
+  SelectNode,
 }
 interface Command {
-    type: CommandType;
+  type: CommandType;
 }
 
-type WorkbenchReducer = (state: WorkbenchState, action: Command) => WorkbenchState;
-interface SelectNodeCommand extends Command{
-    type: CommandType.SelectNode;
-    newSelection: string;
+type WorkbenchReducer = (
+  state: WorkbenchState,
+  action: Command
+) => WorkbenchState;
+interface SelectNodeCommand extends Command {
+  type: CommandType.SelectNode;
+  newSelection: string;
 }
 
 const selectNode: WorkbenchReducer = (oldState, action) => {
-    const a = action as SelectNodeCommand;
-    return {
-        beliefs: {...oldState.beliefs},
-        ...oldState,
-        selection: a.newSelection,
-    };
-}
+  const a = action as SelectNodeCommand;
+  return {
+    beliefs: { ...oldState.beliefs },
+    ...oldState,
+    selection: a.newSelection,
+  };
+};
 
 type DispatchTable = WorkbenchReducer[];
 const dispatchTable = createDispatchTable();
-function createDispatchTable(){
-    let dispatchTable: DispatchTable = [];
-    dispatchTable[CommandType.NoOp] = (state, _action) => state;
-    dispatchTable[CommandType.SelectNode] = selectNode;
-    return dispatchTable;
+function createDispatchTable() {
+  let dispatchTable: DispatchTable = [];
+  dispatchTable[CommandType.NoOp] = (state, _action) => state;
+  dispatchTable[CommandType.SelectNode] = selectNode;
+  return dispatchTable;
 }
 
-function log(message: string){
-    console.log(message);
+function log(message: string) {
+  console.log(message);
 }
 
 function createDispatchers(dispatch: React.Dispatch<Command>) {
-    return {
-        dispatchSelectNode: (newSelection: string) => {
-            const cmd : SelectNodeCommand = {
-                "type": CommandType.SelectNode,
-                "newSelection": newSelection};
-            return dispatch(cmd);
-        }
-    }
+  return {
+    dispatchSelectNode: (newSelection: string) => {
+      const cmd: SelectNodeCommand = {
+        type: CommandType.SelectNode,
+        newSelection: newSelection,
+      };
+      return dispatch(cmd);
+    },
+  };
 }
 
 const stateTransition: WorkbenchReducer = (state, action) => {
-    if (action.type in dispatchTable) {
-        return dispatchTable[action.type](state, action);
-    }
-    log("Unknown action:" + action.type + " (" + CommandType[action.type] + ") "
-        + "Original action:" + action);
-    return state;
+  if (action.type in dispatchTable) {
+    return dispatchTable[action.type](state, action);
+  }
+  log(
+    "Unknown action:" +
+      action.type +
+      " (" +
+      CommandType[action.type] +
+      ") " +
+      "Original action:" +
+      action
+  );
+  return state;
 };
 
 export const DispatchContext = React.createContext(
-    createDispatchers((_: Command)=>{}));
+  createDispatchers((_: Command) => {})
+);
 
 function BeliefWorkbench() {
-    const [workbenchState, workbenchDispatch] = useReducer(stateTransition, initialState);
-    return <DispatchContext.Provider value={createDispatchers(workbenchDispatch)}>
-        <React.StrictMode>
-            <Editor
-                nodes={workbenchState.beliefs.nodes}
-                language={workbenchState.beliefs.language}
-                modelName={workbenchState.beliefs.modelName}
-                version="v0.01"
-                selection={workbenchState.selection}
-            />,
-        </React.StrictMode>
+  const [workbenchState, workbenchDispatch] = useReducer(
+    stateTransition,
+    initialState
+  );
+  return (
+    <DispatchContext.Provider value={createDispatchers(workbenchDispatch)}>
+      <React.StrictMode>
+        <Editor
+          nodes={workbenchState.beliefs.nodes}
+          language={workbenchState.beliefs.language}
+          modelName={workbenchState.beliefs.modelName}
+          version="v0.01"
+          selection={workbenchState.selection}
+        />
+        ,
+      </React.StrictMode>
     </DispatchContext.Provider>
+  );
 }
 
 ReactDOM.render(

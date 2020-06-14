@@ -1,5 +1,4 @@
-Belief Workbench
-=================
+# Belief Workbench
 
 A tool to help people surface their assumptions and formalize their
 reasoning so they can calculate how much they should believe in
@@ -17,17 +16,16 @@ other natural language text.
 The first version will have collaboration via git repository. We'll
 see what requests users have.
 
-TODO
-----
-* Make justification allow for a link to one or more models (maybe with text accompanying the link)
-* Localize the UI
+## TODO
 
-Acknowledgements
-----------------
+- Make justification allow for a link to one or more models (maybe with text accompanying the link)
+- Localize the UI
+
+## Acknowledgements
+
 The logo is modified from: [Twemoji2_1f914.svg on the Wikipedia Commons](https://commons.wikimedia.org/wiki/File:Twemoji2_1f914.svg) [Twitter / CC BY](https://creativecommons.org/licenses/by/4.0)
 
-From [Create React App](https://github.com/facebook/create-react-app)
-=====================================================================
+# From [Create React App](https://github.com/facebook/create-react-app)
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
