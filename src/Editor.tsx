@@ -4,7 +4,6 @@ import "./Editor.css";
 import { DispatchContext } from "./";
 
 type Nodes = Network.Nodes;
-type Node = Network.Node;
 type DistributionType = Network.DistributionType;
 const distributions = Network.distributions;
 
@@ -50,52 +49,6 @@ const DistributionOptions = () => (
   </React.Fragment>
 );
 
-const NodeDistributionEditor = ({
-  distribution,
-}: {
-  distribution: DistributionType;
-}) => (
-  <React.Fragment>
-    <label htmlFor="distribution">Distribution</label>
-    <select name="distribution" id="distribution" defaultValue={distribution}>
-      <DistributionOptions />
-    </select>
-  </React.Fragment>
-);
-
-const NodeEditor = ({
-  nodeTitle,
-  node,
-  language,
-}: {
-  nodeTitle: string;
-  node: Node;
-  language: string;
-}) => (
-  <section className="nodeEditor">
-    <form>
-      <label htmlFor="nodeTitle">Title</label>
-      <input
-        type="text"
-        lang={language}
-        id="nodeTitle"
-        defaultValue={nodeTitle}
-      />
-      <label htmlFor="nodeJustification">Justification</label>
-      <textarea
-        lang={language}
-        id="nodeJustification"
-        defaultValue={node.justification}
-      />
-      {node.type === "DistributionNode" && (
-        <NodeDistributionEditor
-          distribution={(node as Network.DistributionNode).distribution}
-        />
-      )}
-    </form>
-  </section>
-);
-
 const Editor = ({
   nodes,
   language,
@@ -112,18 +65,6 @@ const Editor = ({
   if (selection != null && !(selection in nodes)) {
     selection = null;
   }
-  const editor =
-    selection == null ? (
-      <section className="nodeEditor">
-        <p>Nothing Selected</p>
-      </section>
-    ) : (
-      <NodeEditor
-        nodeTitle={selection}
-        node={nodes[selection]}
-        language={language}
-      />
-    );
 
   return (
     <main className="editor">
@@ -135,7 +76,6 @@ const Editor = ({
         selectedNodeId={selection}
         language={language}
       />
-      {editor}
       <footer className="mainFooter">
         Copyright 2020 Eric Moyer. License:{" "}
         <a href={"https://www.gnu.org/licenses/gpl-3.0.en.html"}>GPL 3.0</a>
