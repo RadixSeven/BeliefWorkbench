@@ -29,25 +29,50 @@ const initialState : WorkbenchState = {
 };
 
 enum CommandType {
-    NoOp
+    NoOp,
+    SelectNode
 }
 interface Command {
     type: CommandType;
 }
 
 type WorkbenchReducer = (state: WorkbenchState, action: Command) => WorkbenchState;
+interface SelectNodeCommand extends Command{
+    type: CommandType.SelectNode;
+    newSelection: string;
+}
+
+const selectNode: WorkbenchReducer = (oldState, action) => {
+    const a = action as SelectNodeCommand;
+    return {
+        beliefs: {...oldState.beliefs},
+        ...oldState,
+        selection: a.newSelection,
+    };
+}
+
 type DispatchTable = WorkbenchReducer[];
-
 const dispatchTable = createDispatchTable();
-
 function createDispatchTable(){
     let dispatchTable: DispatchTable = [];
     dispatchTable[CommandType.NoOp] = (state, _action) => state;
+    dispatchTable[CommandType.SelectNode] = selectNode;
     return dispatchTable;
 }
 
 function log(message: string){
     console.log(message);
+}
+
+function createDispatchers(dispatch: React.Dispatch<Command>) {
+    return {
+        dispatchSelectNode: (newSelection: string) => {
+            const cmd : SelectNodeCommand = {
+                "type": CommandType.SelectNode,
+                "newSelection": newSelection};
+            return dispatch(cmd);
+        }
+    }
 }
 
 const stateTransition: WorkbenchReducer = (state, action) => {
@@ -59,11 +84,12 @@ const stateTransition: WorkbenchReducer = (state, action) => {
     return state;
 };
 
-const DispatchContext = React.createContext((_: Command)=>{});
+export const DispatchContext = React.createContext(
+    createDispatchers((_: Command)=>{}));
 
 function BeliefWorkbench() {
     const [workbenchState, workbenchDispatch] = useReducer(stateTransition, initialState);
-    return <DispatchContext.Provider value={workbenchDispatch}>
+    return <DispatchContext.Provider value={createDispatchers(workbenchDispatch)}>
         <React.StrictMode>
             <Editor
                 nodes={workbenchState.beliefs.nodes}

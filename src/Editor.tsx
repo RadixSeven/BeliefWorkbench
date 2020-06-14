@@ -1,23 +1,27 @@
-import React from "react";
+import React, {useContext} from "react";
 import * as Network from "./nodes_type"
 import './Editor.css';
+import {DispatchContext} from "./"
 
 type Nodes = Network.Nodes;
 type Node = Network.Node;
 type DistributionType = Network.DistributionType;
 const distributions = Network.distributions;
 
-const GraphDisplay = ({nodes, selectedNodeId, language} : {nodes: Nodes, selectedNodeId: string|null, language: string})  =>
-    <section className="graphDisplay">
+const GraphDisplay = ({nodes, selectedNodeId, language} : {nodes: Nodes, selectedNodeId: string|null, language: string})  => {
+    const {dispatchSelectNode} = useContext(DispatchContext)
+    return <section className="graphDisplay">
         <ul> {
             Object.keys(nodes).map((nodeTitle) => {
                 const classN = (nodeTitle === selectedNodeId) ? "selected" : "notSelected";
-                return <li key={nodeTitle} className={classN} lang={language}>
-                    {nodeTitle}
-                </li>;
+                return  <li key={nodeTitle} className={classN} lang={language}>
+                    <button onClick={()=>dispatchSelectNode(nodeTitle)}>
+                        {nodeTitle}
+                    </button></li>;
             })
         }</ul>
     </section>;
+}
 
 
 const distName = (distId: DistributionType) =>
@@ -47,7 +51,7 @@ const NodeEditor = ({nodeTitle, node, language}:{nodeTitle: string, node:Node, l
             <input type="text" lang={language} id="nodeTitle"
                    defaultValue={nodeTitle}/>
             <label htmlFor="nodeJustification">Justification</label>
-            <textarea lang={language} id="nodeTitle"
+            <textarea lang={language} id="nodeJustification"
                    defaultValue={node.justification}/>
             {
                 (node.type === "DistributionNode")  &&
