@@ -1,6 +1,7 @@
 import React, { useReducer } from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
+import "beautiful-react-diagrams/styles.css";
 import Editor from "./Editor";
 import nodes from "./nodes";
 import * as Network from "./nodes_type";
