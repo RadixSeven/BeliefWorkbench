@@ -1,9 +1,72 @@
-import React, { useContext } from "react";
+import React, { ReactElement, ReactNode, useContext } from "react";
 import * as Network from "./nodes_type";
 import "./Editor.css";
 import { DispatchContext } from "./";
+import Diagram from "beautiful-react-diagrams";
+import * as DiagramSchema from "beautiful-react-diagrams/@types/DiagramSchema";
 
 type Nodes = Network.Nodes;
+
+function nodeContent(
+  title: string,
+  node: Network.Node
+): ReactNode | ReactElement {
+  switch (node.type) {
+    case "DistributionNode":
+      return <p>{title}</p>;
+    case "FunctionNode":
+      return <p>{title}</p>;
+    case "ConstantNode": {
+      const cn = node as Network.ConstantNode;
+      return <p>{title + ": " + JSON.stringify(cn.value)}</p>;
+    }
+    case "VisualizationNode":
+      return <p>{title}</p>;
+  }
+}
+
+/// Return the name of the input "port" for "paramName" on node "title"
+function nodeInputName(title: string, paramName: string): string {
+  return `${title}-input-${paramName}`;
+}
+
+function nodeInputs(title: string, node: Network.Node): DiagramSchema.Port[] {
+  return "parents" in node
+    ? Object.keys(node.parents).map((name) => ({
+        id: nodeInputName(title, name),
+        canLink: () => true,
+        alignment: "top",
+      }))
+    : ([] as DiagramSchema.Port[]);
+}
+
+function beautifulDiagramsNode([title, node]: [
+  string,
+  Network.Node
+]): DiagramSchema.Node {
+  return {
+    id: title,
+    coordinates: node.coords,
+    content: nodeContent(title, node),
+    inputs: nodeInputs(title, node),
+    outputs: [{ id: `${title}-output`, canLink: () => true, alignment: "top" }],
+  };
+}
+
+function beautifulDiagramsNodes(nodes: Nodes): DiagramSchema.Node[] {
+  return Object.entries(nodes).map(beautifulDiagramsNode);
+}
+
+function beautifulDiagramsLinks(nodes: Nodes): DiagramSchema.Link[] {
+  return [];
+}
+
+function beautifulDiagramsSchema(nodes: Nodes): DiagramSchema.DiagramSchema {
+  return {
+    nodes: beautifulDiagramsNodes(nodes),
+    links: beautifulDiagramsLinks(nodes),
+  };
+}
 
 const GraphDisplay = ({
   nodes,
@@ -17,20 +80,7 @@ const GraphDisplay = ({
   const { dispatchSelectNode } = useContext(DispatchContext);
   return (
     <section className="graphDisplay">
-      <ul>
-        {" "}
-        {Object.keys(nodes).map((nodeTitle) => {
-          const classN =
-            nodeTitle === selectedNodeId ? "selected" : "notSelected";
-          return (
-            <li key={nodeTitle} className={classN} lang={language}>
-              <button onClick={() => dispatchSelectNode(nodeTitle)}>
-                {nodeTitle}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <Diagram schema={beautifulDiagramsSchema(nodes)} />
     </section>
   );
 };

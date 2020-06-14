@@ -10,13 +10,13 @@ const nodes: Nodes = {
   One: {
     justification: "We needed a one constant",
     type: "ConstantNode",
-    coords: [150, 100],
+    coords: [200, 100],
     value: 1,
   },
   Primes: {
     justification: "List of the smallest primes",
     type: "ConstantNode",
-    coords: [250, 100],
+    coords: [300, 100],
     value: [2, 3, 5, 7, 11, 13, 17, 19],
   },
   "The node's title": {
@@ -32,7 +32,7 @@ const nodes: Nodes = {
   "A random small prime": {
     justification: "This is the output of the prime generator",
     type: "DistributionNode",
-    coords: [200, 200],
+    coords: [250, 200],
     distribution: "DiscreteUniform",
     parents: {
       choices: ["Primes"],

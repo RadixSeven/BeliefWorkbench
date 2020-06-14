@@ -22,6 +22,7 @@
 .editor {
   display: grid;
   grid-gap: 20px;
+  grid-template-rows: 15px 550px 15px;
   grid-template-areas:
     "header"
     "graphDisplay"
