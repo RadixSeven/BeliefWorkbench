@@ -21,9 +21,15 @@ see what requests users have.
 - Make justification allow for a link to one or more models (maybe with text accompanying the link)
 - Localize the UI
 
+## A note about the code
+
+At least in the early versions, I'm deliberately not seeking out libraries to
+make my life easier with "magic", so I can get a better picture of what plain
+React looks like. Thus, I'll have a lot more code than I would otherwise.
+
 ## Acknowledgements
 
-The logo is modified from: [Twemoji2_1f914.svg on the Wikipedia Commons](https://commons.wikimedia.org/wiki/File:Twemoji2_1f914.svg) [Twitter / CC BY](https://creativecommons.org/licenses/by/4.0)
+The logo is modified from: [Twemoji2_1f914.svg on the Wikipedia Commons](https://commons.wikimedia.org/wiki/File:Twemoji2_1f914.svg), [Twitter / CC BY](https://creativecommons.org/licenses/by/4.0)
 
 # From [Create React App](https://github.com/facebook/create-react-app)
 
