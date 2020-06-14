@@ -138,7 +138,7 @@ function BeliefWorkbench() {
           nodes={workbenchState.beliefs.nodes}
           language={workbenchState.beliefs.language}
           modelName={workbenchState.beliefs.modelName}
-          version="v0.01"
+          version="v0.0.1"
           selection={workbenchState.selection}
         />
         ,
