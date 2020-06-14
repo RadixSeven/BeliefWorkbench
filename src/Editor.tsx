@@ -4,8 +4,6 @@ import "./Editor.css";
 import { DispatchContext } from "./";
 
 type Nodes = Network.Nodes;
-type DistributionType = Network.DistributionType;
-const distributions = Network.distributions;
 
 const GraphDisplay = ({
   nodes,
@@ -36,18 +34,6 @@ const GraphDisplay = ({
     </section>
   );
 };
-
-const distName = (distId: DistributionType) => distributions[distId].name;
-
-const DistributionOptions = () => (
-  <React.Fragment>
-    {Object.keys(distributions).map((distId) => (
-      <option value={distId} key={distId}>
-        {distName(distId as DistributionType)}
-      </option>
-    ))}
-  </React.Fragment>
-);
 
 const Editor = ({
   nodes,
