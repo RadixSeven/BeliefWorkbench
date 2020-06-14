@@ -40,19 +40,17 @@ type WorkbenchReducer = (
   state: WorkbenchState,
   action: Command
 ) => WorkbenchState;
+
 interface SelectNodeCommand extends Command {
   type: CommandType.SelectNode;
   newSelection: string;
 }
 
-const selectNode: WorkbenchReducer = (oldState, action) => {
-  const a = action as SelectNodeCommand;
-  return {
-    beliefs: { ...oldState.beliefs },
-    ...oldState,
-    selection: a.newSelection,
-  };
-};
+const selectNode: WorkbenchReducer = (oldState, action) => ({
+  beliefs: { ...oldState.beliefs },
+  ...oldState,
+  selection: (action as SelectNodeCommand).newSelection,
+});
 
 type DispatchTable = WorkbenchReducer[];
 const dispatchTable = createDispatchTable();
