@@ -34,6 +34,7 @@ export interface NodeBase {
   // The unique title string (which is also the node id) is the key in the Nodes map
   type: NodeType;
   justification: string;
+  coords: number[];
 }
 
 export interface NodeWithParents extends NodeBase {
