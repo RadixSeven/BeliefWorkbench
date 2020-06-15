@@ -155,6 +155,8 @@ function beautifulDiagramsNode(
     coordinates: node.coords,
     content: nodeContent(title, node, dispatchSelectNode),
     inputs: nodeInputs(title, node),
+    // Note: there is a typo in DiagramSchema.ts, you need to add the [] for
+    // the definition ouf outputs
     outputs: [
       { id: nodeOutputPortName(title), canLink: () => true, alignment: "top" },
     ],

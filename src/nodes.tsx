@@ -1,6 +1,7 @@
 import { Nodes } from "./nodes_type";
+const Immutable = require("seamless-immutable");
 
-const nodes: Nodes = {
+const nodes: Nodes = Immutable({
   Zero: {
     justification: "We needed a zero constant",
     type: "ConstantNode",
@@ -38,6 +39,6 @@ const nodes: Nodes = {
       choices: ["Primes"],
     },
   },
-};
+});
 
 export default nodes;

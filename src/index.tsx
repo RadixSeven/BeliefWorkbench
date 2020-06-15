@@ -5,6 +5,7 @@ import "beautiful-react-diagrams/styles.css";
 import Editor from "./Editor";
 import nodes from "./nodes";
 import * as Network from "./nodes_type";
+const Immutable = require("seamless-immutable").static;
 
 type WorkbenchState = {
   /// The beliefs being edited
@@ -19,7 +20,7 @@ type WorkbenchState = {
   currentURL: string | null;
 };
 
-const initialState: WorkbenchState = {
+const initialState: WorkbenchState = Immutable({
   beliefs: {
     nodes: nodes,
     language: "en-US",
@@ -27,7 +28,7 @@ const initialState: WorkbenchState = {
   },
   selection: null,
   currentURL: null,
-};
+});
 
 enum CommandType {
   NoOp,
@@ -71,41 +72,34 @@ interface LinkNodesCommand extends Command {
   toInputId: string;
 }
 
-const selectNode: WorkbenchReducer = (oldState, action) => ({
-  beliefs: { ...oldState.beliefs },
-  ...oldState,
-  selection: (action as SelectNodeCommand).newSelection,
-});
+const selectNode: WorkbenchReducer = (oldState, action) =>
+  Immutable.merge(oldState, {
+    selection: (action as SelectNodeCommand).newSelection,
+  });
 
 const moveNode: WorkbenchReducer = (oldState, action) => {
-  let newObj: WorkbenchState = {
-    beliefs: {
-      ...oldState.beliefs,
-    },
-    ...oldState,
-  };
   const a = action as MoveNodeCommand;
-  newObj.beliefs.nodes[a.nodeId].coords = a.newCoords;
-  return newObj;
+  return Immutable.setIn(
+    oldState,
+    ["beliefs", "nodes", a.nodeId, "coords"],
+    a.newCoords
+  );
 };
 
 const linkNode: WorkbenchReducer = (oldState, action) => {
-  let newObj: WorkbenchState = {
-    beliefs: {
-      // Just realized this is a shallow copy ... I need to use Immer
-      ...oldState.beliefs,
-    },
-    ...oldState,
-  };
   const a = action as LinkNodesCommand;
-  const child = newObj.beliefs.nodes[a.toNodeId];
-  if ("parents" in child) {
+  const child = oldState.beliefs.nodes[a.toNodeId];
+  if ("parents" in child && a.toInputId in child.parents) {
     const parentIds = child.parents[a.toInputId];
     if (!(a.fromNodeId in parentIds)) {
-      parentIds.push(a.fromNodeId);
+      return Immutable.setIn(
+        oldState,
+        ["beliefs", "nodes", a.toNodeId, "parents", a.toInputId],
+        parentIds.concat(a.fromNodeId)
+      );
     }
   }
-  return newObj;
+  return oldState;
 };
 
 type DispatchTable = WorkbenchReducer[];
