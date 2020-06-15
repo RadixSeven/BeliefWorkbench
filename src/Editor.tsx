@@ -333,13 +333,19 @@ type ChangeHandlerType = (
     fromNodeId: string,
     toNodeId: string,
     toInputId: string
+  ) => void,
+  dispatchUnlinkNodes: (
+    fromNodeId: string,
+    toNodeId: string,
+    toInputId: string
   ) => void
 ) => (schema: DiagramSchema.DiagramSchema) => void;
 
 const changeHandler: ChangeHandlerType = (
   oldSchema,
   dispatchMoveNode,
-  dispatchLinkNodes
+  dispatchLinkNodes,
+  dispatchUnlinkNodes
 ) => {
   return (newSchema) => {
     const nodeMoves = nodeMovements(oldSchema, newSchema);
@@ -354,7 +360,14 @@ const changeHandler: ChangeHandlerType = (
         l.get("toInputId")
       )
     );
-    //    const removedLinks = oldLinks.subtract(newLinks);
+    const removedLinks = oldLinks.subtract(newLinks);
+    removedLinks.forEach((l) =>
+      dispatchUnlinkNodes(
+        l.get("fromNodeId"),
+        l.get("toNodeId"),
+        l.get("toInputId")
+      )
+    );
   };
 };
 
@@ -371,12 +384,18 @@ const GraphDisplay = ({
     dispatchSelectNode,
     dispatchMoveNode,
     dispatchLinkNodes,
+    dispatchUnlinkNodes,
   } = useContext(DispatchContext);
   const schema = beautifulDiagramsSchema(nodes, dispatchSelectNode);
   const diagram = (
     <Diagram
       schema={schema}
-      onChange={changeHandler(schema, dispatchMoveNode, dispatchLinkNodes)}
+      onChange={changeHandler(
+        schema,
+        dispatchMoveNode,
+        dispatchLinkNodes,
+        dispatchUnlinkNodes
+      )}
     />
   );
   const nodeEditor = <p>Node editor not written yet</p>;
