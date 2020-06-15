@@ -28,3 +28,8 @@
     "graphDisplay"
     "footer";
 }
+
+.edit-icon {
+  display: inline-block;
+  transform: rotateZ(90deg);
+}

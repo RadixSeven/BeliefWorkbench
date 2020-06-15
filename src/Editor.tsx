@@ -10,19 +10,37 @@ type Nodes = Network.Nodes;
 
 function nodeContent(
   title: string,
-  node: Network.Node
+  node: Network.Node,
+  dispatchSelectNode: (newSelection: string) => void
 ): ReactNode | ReactElement {
+  const editIcon = (
+    <span className="edit-icon" onClick={(_event) => dispatchSelectNode(title)}>
+      &#9998;
+    </span>
+  );
+  const justTitle = (
+    <p>
+      {title}
+      {editIcon}
+    </p>
+  );
+
   switch (node.type) {
     case "DistributionNode":
-      return <p>{title}</p>;
+      return justTitle;
     case "FunctionNode":
-      return <p>{title}</p>;
+      return justTitle;
     case "ConstantNode": {
       const cn = node as Network.ConstantNode;
-      return <p>{title + ": " + JSON.stringify(cn.value)}</p>;
+      return (
+        <p>
+          {title + ": " + JSON.stringify(cn.value)}
+          {editIcon}
+        </p>
+      );
     }
     case "VisualizationNode":
-      return <p>{title}</p>;
+      return justTitle;
   }
 }
 
@@ -128,14 +146,14 @@ function nodeInputs(title: string, node: Network.Node): DiagramSchema.Port[] {
     : ([] as DiagramSchema.Port[]);
 }
 
-function beautifulDiagramsNode([title, node]: [
-  string,
-  Network.Node
-]): DiagramSchema.Node {
+function beautifulDiagramsNode(
+  [title, node]: [string, Network.Node],
+  dispatchSelectNode: (newSelection: string) => void
+): DiagramSchema.Node {
   return {
     id: title,
     coordinates: node.coords,
-    content: nodeContent(title, node),
+    content: nodeContent(title, node, dispatchSelectNode),
     inputs: nodeInputs(title, node),
     outputs: [
       { id: nodeOutputPortName(title), canLink: () => true, alignment: "top" },
@@ -173,17 +191,25 @@ function beautifulDiagramsNodeLinks([title, node]: [
     : [];
 }
 
-function beautifulDiagramsNodes(nodes: Nodes): DiagramSchema.Node[] {
-  return Object.entries(nodes).map(beautifulDiagramsNode);
+function beautifulDiagramsNodes(
+  nodes: Nodes,
+  dispatchSelectNode: (newSelection: string) => void
+): DiagramSchema.Node[] {
+  return Object.entries(nodes).map((param) =>
+    beautifulDiagramsNode(param, dispatchSelectNode)
+  );
 }
 
 function beautifulDiagramsLinks(nodes: Nodes): DiagramSchema.Link[] {
   return Object.entries(nodes).flatMap(beautifulDiagramsNodeLinks);
 }
 
-function beautifulDiagramsSchema(nodes: Nodes): DiagramSchema.DiagramSchema {
+function beautifulDiagramsSchema(
+  nodes: Nodes,
+  dispatchSelectNode: (newSelection: string) => void
+): DiagramSchema.DiagramSchema {
   return {
-    nodes: beautifulDiagramsNodes(nodes),
+    nodes: beautifulDiagramsNodes(nodes, dispatchSelectNode),
     links: beautifulDiagramsLinks(nodes),
   };
 }
@@ -344,13 +370,17 @@ const GraphDisplay = ({
     dispatchMoveNode,
     dispatchLinkNodes,
   } = useContext(DispatchContext);
-  const schema = beautifulDiagramsSchema(nodes);
+  const schema = beautifulDiagramsSchema(nodes, dispatchSelectNode);
+  const diagram = (
+    <Diagram
+      schema={schema}
+      onChange={changeHandler(schema, dispatchMoveNode, dispatchLinkNodes)}
+    />
+  );
+  const nodeEditor = <p>Node editor not written yet</p>;
   return (
-    <section className="graphDisplay">
-      <Diagram
-        schema={schema}
-        onChange={changeHandler(schema, dispatchMoveNode, dispatchLinkNodes)}
-      />
+    <section className="graphDisplay" lang={language}>
+      {selectedNodeId ? nodeEditor : diagram}
     </section>
   );
 };
