@@ -35,6 +35,7 @@ enum CommandType {
   SelectNode,
   MoveNode,
   LinkNodes,
+  UnlinkNodes,
 }
 interface Command {
   type: CommandType;
@@ -72,6 +73,22 @@ interface LinkNodesCommand extends Command {
   toInputId: string;
 }
 
+interface UnlinkNodesCommand extends Command {
+  type: CommandType.UnlinkNodes;
+  /**
+   * The node at whose output the link starts
+   */
+  fromNodeId: string;
+  /**
+   * The node at whose input the link terminates
+   */
+  toNodeId: string;
+  /**
+   * The id of the input at which the link terminates
+   */
+  toInputId: string;
+}
+
 const selectNode: WorkbenchReducer = (oldState, action) =>
   Immutable.merge(oldState, {
     selection: (action as SelectNodeCommand).newSelection,
@@ -91,11 +108,27 @@ const linkNode: WorkbenchReducer = (oldState, action) => {
   const child = oldState.beliefs.nodes[a.toNodeId];
   if ("parents" in child && a.toInputId in child.parents) {
     const parentIds = child.parents[a.toInputId];
-    if (!(a.fromNodeId in parentIds)) {
+    if (!parentIds.includes(a.fromNodeId)) {
       return Immutable.setIn(
         oldState,
         ["beliefs", "nodes", a.toNodeId, "parents", a.toInputId],
         parentIds.concat(a.fromNodeId)
+      );
+    }
+  }
+  return oldState;
+};
+
+const unlinkNode: WorkbenchReducer = (oldState, action) => {
+  const a = action as LinkNodesCommand;
+  const child = oldState.beliefs.nodes[a.toNodeId];
+  if ("parents" in child && a.toInputId in child.parents) {
+    const parentIds = child.parents[a.toInputId];
+    if (parentIds.includes(a.fromNodeId)) {
+      return Immutable.setIn(
+        oldState,
+        ["beliefs", "nodes", a.toNodeId, "parents", a.toInputId],
+        parentIds.filter((nodeId) => nodeId !== a.fromNodeId)
       );
     }
   }
@@ -110,6 +143,7 @@ function createDispatchTable() {
   dispatchTable[CommandType.SelectNode] = selectNode;
   dispatchTable[CommandType.MoveNode] = moveNode;
   dispatchTable[CommandType.LinkNodes] = linkNode;
+  dispatchTable[CommandType.UnlinkNodes] = unlinkNode;
   return dispatchTable;
 }
 
@@ -144,6 +178,19 @@ function createDispatchers(dispatch: React.Dispatch<Command>) {
         toNodeId: toNodeId,
         toInputId: toInputId,
         type: CommandType.LinkNodes,
+      };
+      return dispatch(cmd);
+    },
+    dispatchUnlinkNodes: (
+      fromNodeId: string,
+      toNodeId: string,
+      toInputId: string
+    ) => {
+      const cmd: UnlinkNodesCommand = {
+        fromNodeId: fromNodeId,
+        toNodeId: toNodeId,
+        toInputId: toInputId,
+        type: CommandType.UnlinkNodes,
       };
       return dispatch(cmd);
     },
