@@ -100,18 +100,18 @@ export type DistributionPropertyMap = {
   };
 };
 
-export const distributions: DistributionPropertyMap = {
-  DiscreteUniform: {
-    name: "Discrete Uniform Choice",
-    inputs: {
-      choices: "array",
-    },
-  },
-  ContinuousUniform: {
-    name: "Continuous Uniform",
-    inputs: {
-      min: "double",
-      max: "double",
-    },
-  },
-};
+// export const distributions: DistributionPropertyMap = {
+//   DiscreteUniform: {
+//     name: "Discrete Uniform Choice",
+//     inputs: {
+//       choices: "array",
+//     },
+//   },
+//   ContinuousUniform: {
+//     name: "Continuous Uniform",
+//     inputs: {
+//       min: "double",
+//       max: "double",
+//     },
+//   },
+// };
