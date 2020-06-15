@@ -1,9 +1,3 @@
-import {
-  ImmutableTypedMap as Immutable,
-  createTypedMap,
-} from "./immutable-typed-map";
-import { List as IList, Map as IMap } from "immutable";
-
 export type DistributionType =
   | "ContinuousUniform"
   //    "Gaussian" |
@@ -36,44 +30,34 @@ export type FunctionType =
   | "ArrayLength" // Return the length of the input array
   | "IntRange"; // Generate a vector of integers from first, size, step
 
-interface NodeBaseMutable {
+export interface NodeBase {
   // The unique title string (which is also the node id) is the key in the Nodes map
   type: NodeType;
   justification: string;
-  //  coords: IList<number>;
   coords: number[];
 }
 
-export type NodeBase = Immutable<NodeBaseMutable>;
-
-export type InputId = string;
-export type NodeId = string;
-
-/**
- * The parents of the given node ... along with which parameter
- * they attach to.
- *
- * I made parents part of the node structure rather than having
- * separate edge objects because I think it will be easier
- * to follow in the Github diffs
- */
-interface NodeWithParentsMutable extends NodeBaseMutable {
-  /** Parent ids: Key is the name of the input and the values are the */
-  parents: IMap<InputId, IList<NodeId>>;
+export interface NodeWithParents extends NodeBase {
+  /// The parents of the given node ... along with which parameter
+  /// they attach to.
+  ///
+  /// I made parents part of the node structure rather than having
+  /// separate edge objects because I think it will be easier
+  /// to follow in the Github diffs
+  parents: {
+    [inputName: string]: string[]; //Parent ids
+  };
 }
-export type NodeWithParents = Immutable<NodeWithParentsMutable>;
 
-interface DistributionNodeMutable extends NodeWithParentsMutable {
+export interface DistributionNode extends NodeWithParents {
   type: "DistributionNode";
   distribution: DistributionType;
 }
-export type DistributionNode = Immutable<DistributionNodeMutable>;
 
-interface FunctionNodeMutable extends NodeWithParentsMutable {
+export interface FunctionNode extends NodeWithParents {
   type: "FunctionNode";
   function: FunctionType;
 }
-export type FunctionNode = Immutable<FunctionNodeMutable>;
 
 /// The names of the primitive types for the Belief Workbench graph language
 export type PrimitiveType = "bool" | "int" | "double" | "string" | "array";
@@ -85,19 +69,17 @@ export type PrimitiveActualType =
   | string
   | PrimitiveActualType[];
 
-interface ConstantNodeMutable extends NodeBaseMutable {
+export interface ConstantNode extends NodeBase {
   type: "ConstantNode";
   value: PrimitiveActualType;
 }
-export type ConstantNode = Immutable<ConstantNodeMutable>;
 
 export type VisualizationType = "1DHistogram" | "2DColorForProbability";
 
-interface VisualizationNodeMutable extends NodeWithParentsMutable {
+export interface VisualizationNode extends NodeWithParents {
   type: "VisualizationNode";
   visualization: VisualizationType;
 }
-export type VisualizationNode = Immutable<VisualizationNodeMutable>;
 
 export type Node =
   | DistributionNode
@@ -105,39 +87,31 @@ export type Node =
   | ConstantNode
   | VisualizationNode;
 
-export type Nodes = IMap<NodeId, Node>;
-
-interface DistributionPropertiesMutable {
-  name: string;
-  inputs: IMap<InputId, PrimitiveType>;
+export interface Nodes {
+  [node_id: string]: Node;
 }
-export type DistribtionProperties = Immutable<DistributionPropertiesMutable>;
 
-export type DistributionPropertyMap = IMap<
-  DistributionType,
-  DistribtionProperties
->;
+export type DistributionPropertyMap = {
+  [distributionType in DistributionType]: {
+    name: string;
+    inputs: {
+      [input_name: string]: PrimitiveType;
+    };
+  };
+};
 
-const foo = createTypedMap<DistributionPropertiesMutable>({
-  name: "Discrete Uniform Choice",
-  inputs: IMap({
-    choices: "array",
-  }),
-});
-
-export const distributions: DistributionPropertyMap = IMap<
-  DistributionType,
-  DistribtionProperties
->([
-  ["DiscreteUniform", foo],
-  [
-    "ContinuousUniform",
-    createTypedMap<DistributionPropertiesMutable>({
-      name: "Continuous Uniform",
-      inputs: IMap({
-        min: "double",
-        max: "double",
-      }),
-    }),
-  ],
-]);
+export const distributions: DistributionPropertyMap = {
+  DiscreteUniform: {
+    name: "Discrete Uniform Choice",
+    inputs: {
+      choices: "array",
+    },
+  },
+  ContinuousUniform: {
+    name: "Continuous Uniform",
+    inputs: {
+      min: "double",
+      max: "double",
+    },
+  },
+};
