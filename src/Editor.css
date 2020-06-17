@@ -29,7 +29,25 @@
     "footer";
 }
 
+.node-contents {
+}
+
+.node-controls {
+  display: flex;
+  justify-content: space-between;
+}
+
+.edit-icon-div {
+}
+
 .edit-icon {
   display: inline-block;
   transform: rotateZ(90deg);
+}
+
+.delete-icon {
+  grid-column: 1;
+}
+
+p.node-text {
 }

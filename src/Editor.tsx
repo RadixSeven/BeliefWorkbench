@@ -11,19 +11,34 @@ type Nodes = Network.Nodes;
 function nodeContent(
   title: string,
   node: Network.Node,
-  dispatchSelectNode: (newSelection: string) => void
+  dispatchSelectNode: (newSelection: string) => void,
+  dispatchDeleteNode: (idToDelete: string) => void
 ): ReactNode | ReactElement {
   const editIcon = (
     <span className="edit-icon" onClick={(_event) => dispatchSelectNode(title)}>
       &#9998;
     </span>
   );
-  const justTitle = (
-    <p>
-      {title}
-      {editIcon}
-    </p>
+  const deleteIcon = (
+    <span
+      className="delete-icon"
+      onClick={(_event) => dispatchDeleteNode(title)}
+    >
+      &#128465;
+    </span>
   );
+
+  const addButtons = (text: string) => (
+    <div className="node-contents">
+      <p className="node-text">{text}</p>
+      <div className="node-controls">
+        {deleteIcon}
+        <div className="edit-icon-div">{editIcon}</div>
+      </div>
+    </div>
+  );
+
+  const justTitle = addButtons(title);
 
   switch (node.type) {
     case "DistributionNode":
@@ -32,12 +47,7 @@ function nodeContent(
       return justTitle;
     case "ConstantNode": {
       const cn = node as Network.ConstantNode;
-      return (
-        <p>
-          {title + ": " + JSON.stringify(cn.value)}
-          {editIcon}
-        </p>
-      );
+      return addButtons(title + ": " + JSON.stringify(cn.value));
     }
     case "VisualizationNode":
       return justTitle;
@@ -153,7 +163,7 @@ function beautifulDiagramsNode(
   return {
     id: title,
     coordinates: node.coords,
-    content: nodeContent(title, node, dispatchSelectNode),
+    content: nodeContent(title, node, dispatchSelectNode, (_foo) => {}),
     inputs: nodeInputs(title, node),
     // Note: there is a typo in DiagramSchema.ts, you need to add the [] for
     // the definition ouf outputs
