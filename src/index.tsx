@@ -6,7 +6,7 @@ import Editor from "./Editor";
 import nodes from "./nodes";
 import * as Network from "./nodes_type";
 
-const Immutable = require("seamless-immutable").static;
+const Immutable = require("seamless-immutable");
 
 type WorkbenchState = {
   /// The beliefs being edited
