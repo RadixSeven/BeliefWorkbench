@@ -9,10 +9,6 @@
   border-style: solid;
 }
 
-.graphDisplay li.selected {
-  color: #00ee22;
-}
-
 .mainFooter {
   grid-area: footer;
   font-size: small;

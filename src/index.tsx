@@ -9,15 +9,16 @@ import * as Network from "./nodes_type";
 const Immutable = require("seamless-immutable");
 
 type WorkbenchState = {
-  /// The beliefs being edited
+  /** The beliefs being edited */
   beliefs: {
     nodes: Network.Nodes;
     language: string;
     modelName: string;
   };
-  /// The key of the currently selected node in beliefs.Nodes
-  selection: string | null;
-  /// The URL for storing the current beliefs
+  /** The key of the node currently being edited (or null if not
+   *  editing a node.) */
+  currentlyEditing: string | null;
+  /** The URL for storing the current beliefs */
   currentURL: string | null;
 };
 
@@ -27,13 +28,13 @@ const initialState: WorkbenchState = Immutable({
     language: "en-US",
     modelName: "Demo Model",
   },
-  selection: null,
+  currentlyEditing: null,
   currentURL: null,
 });
 
 enum CommandType {
   NoOp,
-  SelectNode,
+  StartEditingNode,
   MoveNode,
   LinkNodes,
   UnlinkNodes,
@@ -48,9 +49,9 @@ type WorkbenchReducer = (
   action: Command
 ) => WorkbenchState;
 
-interface SelectNodeCommand extends Command {
-  type: CommandType.SelectNode;
-  newSelection: string;
+interface StartNodeEditCommand extends Command {
+  type: CommandType.StartEditingNode;
+  toEdit: string;
 }
 
 interface MoveNodeCommand extends Command {
@@ -99,9 +100,9 @@ interface DeleteNodeCommand extends Command {
   nodeIdToDelete: string;
 }
 
-const selectNode: WorkbenchReducer = (oldState, action) =>
+const startNodeEdit: WorkbenchReducer = (oldState, action) =>
   Immutable.merge(oldState, {
-    selection: (action as SelectNodeCommand).newSelection,
+    currentlyEditing: (action as StartNodeEditCommand).toEdit,
   });
 
 const moveNode: WorkbenchReducer = (oldState, action) => {
@@ -195,7 +196,7 @@ const dispatchTable = createDispatchTable();
 function createDispatchTable() {
   let dispatchTable: DispatchTable = [];
   dispatchTable[CommandType.NoOp] = (state, _action) => state;
-  dispatchTable[CommandType.SelectNode] = selectNode;
+  dispatchTable[CommandType.StartEditingNode] = startNodeEdit;
   dispatchTable[CommandType.MoveNode] = moveNode;
   dispatchTable[CommandType.LinkNodes] = linkNode;
   dispatchTable[CommandType.UnlinkNodes] = unlinkNode;
@@ -209,10 +210,10 @@ function log(message: string) {
 
 function createDispatchers(dispatch: React.Dispatch<Command>) {
   return {
-    dispatchSelectNode: (newSelection: string) => {
-      const cmd: SelectNodeCommand = {
-        type: CommandType.SelectNode,
-        newSelection: newSelection,
+    dispatchStartNodeEdit: (toEdit: string) => {
+      const cmd: StartNodeEditCommand = {
+        type: CommandType.StartEditingNode,
+        toEdit: toEdit,
       };
       return dispatch(cmd);
     },
@@ -293,7 +294,7 @@ function BeliefWorkbench() {
           language={workbenchState.beliefs.language}
           modelName={workbenchState.beliefs.modelName}
           version="v0.0.1"
-          selection={workbenchState.selection}
+          singleNodeToEdit={workbenchState.currentlyEditing}
         />
         ,
       </React.StrictMode>

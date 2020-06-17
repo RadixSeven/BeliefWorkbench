@@ -390,15 +390,15 @@ const changeHandler: ChangeHandlerType = (
 
 const GraphDisplay = ({
   nodes,
-  selectedNodeId,
+  singleNodeToEdit,
   language,
 }: {
   nodes: Nodes;
-  selectedNodeId: string | null;
+  singleNodeToEdit: string | null;
   language: string;
 }) => {
   const {
-    dispatchSelectNode,
+    dispatchStartNodeEdit,
     dispatchMoveNode,
     dispatchLinkNodes,
     dispatchUnlinkNodes,
@@ -406,7 +406,7 @@ const GraphDisplay = ({
   } = useContext(DispatchContext);
   const schema = beautifulDiagramsSchema(
     nodes,
-    dispatchSelectNode,
+    dispatchStartNodeEdit,
     dispatchDeleteNode
   );
   const diagram = (
@@ -423,7 +423,7 @@ const GraphDisplay = ({
   const nodeEditor = <p>Node editor not written yet</p>;
   return (
     <section className="graphDisplay" lang={language}>
-      {selectedNodeId ? nodeEditor : diagram}
+      {singleNodeToEdit ? nodeEditor : diagram}
     </section>
   );
 };
@@ -438,17 +438,17 @@ const Editor = ({
   nodes,
   language,
   modelName,
-  selection,
+  singleNodeToEdit,
   version,
 }: {
   nodes: Nodes;
   language: string;
   modelName: string;
-  selection: string | null;
+  singleNodeToEdit: string | null;
   version: string;
 }) => {
-  if (selection != null && !(selection in nodes)) {
-    selection = null;
+  if (singleNodeToEdit != null && !(singleNodeToEdit in nodes)) {
+    singleNodeToEdit = null;
   }
 
   return (
@@ -461,7 +461,7 @@ const Editor = ({
       </header>
       <GraphDisplay
         nodes={nodes}
-        selectedNodeId={selection}
+        singleNodeToEdit={singleNodeToEdit}
         language={language}
       />
       <footer className="mainFooter">
