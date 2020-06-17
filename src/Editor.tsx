@@ -33,7 +33,7 @@ function nodeContent(
       <p className="node-text">{text}</p>
       <div className="node-controls">
         {deleteIcon}
-        <div className="edit-icon-div">{editIcon}</div>
+        {editIcon}
       </div>
     </div>
   );
@@ -158,12 +158,13 @@ function nodeInputs(title: string, node: Network.Node): DiagramSchema.Port[] {
 
 function beautifulDiagramsNode(
   [title, node]: [string, Network.Node],
-  dispatchSelectNode: (newSelection: string) => void
+  dispatchSelectNode: (newSelection: string) => void,
+  dispatchDeleteNode: (nodeIdToDelete: string) => void
 ): DiagramSchema.Node {
   return {
     id: title,
     coordinates: node.coords,
-    content: nodeContent(title, node, dispatchSelectNode, (_foo) => {}),
+    content: nodeContent(title, node, dispatchSelectNode, dispatchDeleteNode),
     inputs: nodeInputs(title, node),
     // Note: there is a typo in DiagramSchema.ts, you need to add the [] for
     // the definition ouf outputs
@@ -205,10 +206,11 @@ function beautifulDiagramsNodeLinks([title, node]: [
 
 function beautifulDiagramsNodes(
   nodes: Nodes,
-  dispatchSelectNode: (newSelection: string) => void
+  dispatchSelectNode: (newSelection: string) => void,
+  dispatchDeleteNode: (nodeIdToDelete: string) => void
 ): DiagramSchema.Node[] {
   return Object.entries(nodes).map((param) =>
-    beautifulDiagramsNode(param, dispatchSelectNode)
+    beautifulDiagramsNode(param, dispatchSelectNode, dispatchDeleteNode)
   );
 }
 
@@ -218,10 +220,15 @@ function beautifulDiagramsLinks(nodes: Nodes): DiagramSchema.Link[] {
 
 function beautifulDiagramsSchema(
   nodes: Nodes,
-  dispatchSelectNode: (newSelection: string) => void
+  dispatchSelectNode: (newSelection: string) => void,
+  dispatchDeleteNode: (nodeIdToDelete: string) => void
 ): DiagramSchema.DiagramSchema {
   return {
-    nodes: beautifulDiagramsNodes(nodes, dispatchSelectNode),
+    nodes: beautifulDiagramsNodes(
+      nodes,
+      dispatchSelectNode,
+      dispatchDeleteNode
+    ),
     links: beautifulDiagramsLinks(nodes),
   };
 }
@@ -395,8 +402,13 @@ const GraphDisplay = ({
     dispatchMoveNode,
     dispatchLinkNodes,
     dispatchUnlinkNodes,
+    dispatchDeleteNode,
   } = useContext(DispatchContext);
-  const schema = beautifulDiagramsSchema(nodes, dispatchSelectNode);
+  const schema = beautifulDiagramsSchema(
+    nodes,
+    dispatchSelectNode,
+    dispatchDeleteNode
+  );
   const diagram = (
     <Diagram
       schema={schema}

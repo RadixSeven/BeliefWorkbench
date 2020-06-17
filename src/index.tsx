@@ -5,6 +5,7 @@ import "beautiful-react-diagrams/styles.css";
 import Editor from "./Editor";
 import nodes from "./nodes";
 import * as Network from "./nodes_type";
+
 const Immutable = require("seamless-immutable").static;
 
 type WorkbenchState = {
@@ -36,6 +37,7 @@ enum CommandType {
   MoveNode,
   LinkNodes,
   UnlinkNodes,
+  DeleteNode,
 }
 interface Command {
   type: CommandType;
@@ -89,6 +91,14 @@ interface UnlinkNodesCommand extends Command {
   toInputId: string;
 }
 
+interface DeleteNodeCommand extends Command {
+  type: CommandType.DeleteNode;
+  /**
+   * The node at whose output the link starts
+   */
+  nodeIdToDelete: string;
+}
+
 const selectNode: WorkbenchReducer = (oldState, action) =>
   Immutable.merge(oldState, {
     selection: (action as SelectNodeCommand).newSelection,
@@ -135,6 +145,51 @@ const unlinkNode: WorkbenchReducer = (oldState, action) => {
   return oldState;
 };
 
+const deleteNode: WorkbenchReducer = (oldState, action) => {
+  const a = action as DeleteNodeCommand;
+  const oldBranch = oldState.beliefs.nodes;
+  const newBranch = Immutable.without(oldBranch, a.nodeIdToDelete);
+  const withoutNode = Immutable.setIn(
+    oldState,
+    ["beliefs", "nodes"],
+    newBranch
+  );
+
+  const deleteFromParentsList = (parentList: Array<string>) =>
+    parentList.filter((parent: string) => parent !== a.nodeIdToDelete);
+
+  const deleteFromDescendantWithParents = (
+    node: Network.NodeWithParents
+  ): Network.Node =>
+    Immutable.set(
+      node,
+      "parents",
+      Immutable.asObject(
+        Object.entries(node.parents).map(
+          ([portId, parentList]: [string, Array<string>]) => {
+            return [portId, deleteFromParentsList(parentList)];
+          }
+        )
+      )
+    );
+
+  const deleteFromDescendant = (node: Network.Node): Network.Node =>
+    "parents" in node ? deleteFromDescendantWithParents(node) : node;
+
+  return Immutable.setIn(
+    withoutNode,
+    ["beliefs", "nodes"],
+    Immutable.asObject(
+      (Object.entries(withoutNode.beliefs.nodes) as Array<
+        [string, Network.Node]
+      >).map(([nodeId, node]: [string, Network.Node]) => [
+        nodeId,
+        deleteFromDescendant(node),
+      ])
+    )
+  );
+};
+
 type DispatchTable = WorkbenchReducer[];
 const dispatchTable = createDispatchTable();
 function createDispatchTable() {
@@ -144,6 +199,7 @@ function createDispatchTable() {
   dispatchTable[CommandType.MoveNode] = moveNode;
   dispatchTable[CommandType.LinkNodes] = linkNode;
   dispatchTable[CommandType.UnlinkNodes] = unlinkNode;
+  dispatchTable[CommandType.DeleteNode] = deleteNode;
   return dispatchTable;
 }
 
@@ -191,6 +247,13 @@ function createDispatchers(dispatch: React.Dispatch<Command>) {
         toNodeId: toNodeId,
         toInputId: toInputId,
         type: CommandType.UnlinkNodes,
+      };
+      return dispatch(cmd);
+    },
+    dispatchDeleteNode: (nodeIdToDelete: string) => {
+      const cmd: DeleteNodeCommand = {
+        type: CommandType.DeleteNode,
+        nodeIdToDelete: nodeIdToDelete,
       };
       return dispatch(cmd);
     },
