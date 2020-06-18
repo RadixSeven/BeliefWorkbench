@@ -2,7 +2,7 @@ export type DistributionType =
   | "ContinuousUniform"
   //    "Gaussian" |
   //    "PiecewiseConstant" | // Sorted list of bin medians, equal probability
-  //    "EmpiricalBins" | // Like piecewise constant except that the first and last bins are scaled exponential distributions rather than scaled continuous uniform
+  //    "EmpiricalBins" | // Like piecewise constant except that the first and last bins are scaled exponential distributionProps rather than scaled continuous uniform
   | "DiscreteUniform";
 
 export type NodeType =
@@ -17,7 +17,7 @@ export type NodeType =
 /// should be an optional strict mode that highlights type errors and
 /// forces the user to do something about them.
 export type FunctionType =
-  | "Plus" // Add its numeric inputs
+  | "Add" // Add its numeric inputs
   | "Multiply" // Multiply its numeric inputs
   | "Divide" // Divide its numeric inputs by the last one
   | "Round" // Round its numeric inputs to the nearest integer
@@ -26,7 +26,7 @@ export type FunctionType =
   | "AreEqual" // Are its inputs equal
   | "MakeArray" // Return an array made of its inputs. Input arrays are made an entry in the result
   | "ConcatArrays" // Return the array made from concatenating its input arrays
-  | "ArrayElement" // Select the given element from its input array - can perform the function of if to make mixture distributions
+  | "ArrayElement" // Select the given element from its input array - can perform the function of if to make mixture distributionProps
   | "ArrayLength" // Return the length of the input array
   | "IntRange"; // Generate a vector of integers from first, size, step
 
@@ -87,31 +87,121 @@ export type Node =
   | ConstantNode
   | VisualizationNode;
 
+/**
+ * Return true if this type of node has parents. Type reflection would
+ * be better, but it is so clunky in Javascript that I'm just going
+ * to deal with the maintenance headaches of not having it
+ * @param type The type being queried
+ */
+export function hasParents(type: NodeType) {
+  return type !== "ConstantNode";
+}
+
 export interface Nodes {
   [node_id: string]: Node;
 }
 
-export type DistributionPropertyMap = {
-  [distributionType in DistributionType]: {
-    name: string;
-    inputs: {
-      [input_name: string]: PrimitiveType;
-    };
+export interface TypeProperties {
+  name: string;
+  inputs: {
+    [input_name: string]: PrimitiveType;
   };
+}
+
+function emptyParentsMemberFromProperties(props: TypeProperties) {
+  return {
+    parents: Object.fromEntries(
+      Object.keys(props.inputs).map((inputName) => [inputName, []])
+    ),
+  };
+}
+
+export type DistributionPropertyMap = {
+  [type in DistributionType]: TypeProperties;
 };
 
-// export const distributions: DistributionPropertyMap = {
-//   DiscreteUniform: {
-//     name: "Discrete Uniform Choice",
-//     inputs: {
-//       choices: "array",
-//     },
-//   },
-//   ContinuousUniform: {
-//     name: "Continuous Uniform",
-//     inputs: {
-//       min: "double",
-//       max: "double",
-//     },
-//   },
-// };
+export const distributionProps: DistributionPropertyMap = {
+  DiscreteUniform: {
+    name: "Discrete Uniform Choice",
+    inputs: {
+      choices: "array",
+    },
+  },
+  ContinuousUniform: {
+    name: "Continuous Uniform",
+    inputs: {
+      min: "double",
+      max: "double",
+    },
+  },
+};
+
+export type FunctionPropertyMap = {
+  [type in FunctionType]: TypeProperties;
+};
+
+export const functionProps: FunctionPropertyMap = {
+  Add: { name: "Add", inputs: { toAdd: "array" } },
+  Multiply: { name: "Multiply", inputs: { toMultiply: "array" } },
+  Divide: {
+    name: "Divide",
+    inputs: { numerator: "array", denominator: "double" },
+  },
+  Round: { name: "Round", inputs: { toRound: "array" } },
+  Ceil: { name: "Ceil", inputs: { toCeil: "array" } },
+  Floor: { name: "Floor", inputs: { toFloor: "array" } },
+  AreEqual: { name: "Are Equal", inputs: { toCheck: "array" } },
+  MakeArray: { name: "Make Array", inputs: { toCombine: "array" } },
+  ConcatArrays: { name: "Concatenate Arrays", inputs: { toConcat: "array" } },
+  ArrayElement: {
+    name: "Array Element",
+    inputs: { array: "array", index: "int" },
+  },
+  ArrayLength: { name: "Array Length", inputs: { array: "array" } },
+  IntRange: {
+    name: "Integer Range",
+    inputs: { first: "int", size: "int", step: "int" },
+  },
+};
+
+export type VisualizationPropertyMap = {
+  [type in VisualizationType]: TypeProperties;
+};
+
+export const visualizationProps: VisualizationPropertyMap = {
+  "1DHistogram": { name: "1-D Histogram", inputs: { variables: "array" } },
+  "2DColorForProbability": {
+    name: "2-D Color for Probability ",
+    inputs: { variable1: "array", variable2: "array" },
+  },
+};
+
+type EmptyParentType = { parents: { [inputName: string]: string[] } };
+
+export function emptyParentsMember(
+  type: NodeType,
+  distribution: DistributionType,
+  func: FunctionType,
+  visualization: VisualizationType
+): EmptyParentType {
+  switch (type) {
+    case "FunctionNode":
+      return emptyParentsMemberFromProperties(functionProps[func]);
+    case "ConstantNode": {
+      console.error(
+        "emptyParentsMember called for a constant node (they do not have parents)"
+      );
+      return { parents: {} };
+    }
+    case "ConstraintNode":
+      return { parents: { toConstrain: [] } };
+    case "VisualizationNode":
+      return emptyParentsMemberFromProperties(
+        visualizationProps[visualization]
+      );
+    case "DistributionNode":
+      return emptyParentsMemberFromProperties(distributionProps[distribution]);
+  }
+  console.warn(`emptyParentsMember called for unknown node type: "${type}"`);
+  return { parents: {} };
+}

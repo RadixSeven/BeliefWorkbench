@@ -5,8 +5,27 @@ import "beautiful-react-diagrams/styles.css";
 import Editor from "./Editor";
 import nodes from "./nodes";
 import * as Network from "./nodes_type";
+import {
+  ConstantNode,
+  DistributionNode,
+  FunctionNode,
+  VisualizationNode,
+} from "./nodes_type";
 
 const Immutable = require("seamless-immutable");
+
+/**
+ * The state of the Node editor form.
+ */
+type EditorState = {
+  title: string;
+  justification: string;
+  type: Network.NodeType;
+  distribution: Network.DistributionType;
+  function: Network.FunctionType;
+  visualization: Network.VisualizationType;
+  value: Network.PrimitiveActualType;
+};
 
 type WorkbenchState = {
   /** The beliefs being edited */
@@ -15,22 +34,39 @@ type WorkbenchState = {
     language: string;
     modelName: string;
   };
-  /** The key of the node currently being edited (or null if not
+  /** The current key of the node currently being edited (or null if not
    *  editing a node.) */
   currentlyEditing: string | null;
+  /**
+   * The properties the edited node will have (if it is the right type)
+   *
+   * This is also the state of the node editor form.
+   */
+  newProperties: EditorState;
   /** The URL for storing the current beliefs */
   currentURL: string | null;
 };
 
-const initialState: WorkbenchState = Immutable({
+const defaultEditorState: EditorState = {
+  title: "",
+  justification: "",
+  type: "ConstantNode",
+  distribution: "DiscreteUniform",
+  function: "Add",
+  visualization: "1DHistogram",
+  value: 0,
+};
+
+const initialState: WorkbenchState = {
   beliefs: {
     nodes: nodes,
     language: "en-US",
     modelName: "Demo Model",
   },
   currentlyEditing: null,
+  newProperties: defaultEditorState,
   currentURL: null,
-});
+};
 
 enum CommandType {
   NoOp,
@@ -100,10 +136,114 @@ interface DeleteNodeCommand extends Command {
   nodeIdToDelete: string;
 }
 
-const startNodeEdit: WorkbenchReducer = (oldState, action) =>
-  Immutable.merge(oldState, {
-    currentlyEditing: (action as StartNodeEditCommand).toEdit,
+function editorProperties(node: Network.Node): EditorState {
+  const baseValues = {
+    ...defaultEditorState,
+    type: node.type,
+    justification: node.justification,
+  };
+  switch (node.type) {
+    case "DistributionNode":
+      return {
+        ...baseValues,
+        distribution: (node as DistributionNode).distribution,
+      };
+    case "FunctionNode":
+      return {
+        ...baseValues,
+        function: (node as FunctionNode).function,
+      };
+    case "ConstantNode":
+      return {
+        ...baseValues,
+        value: (node as ConstantNode).value,
+      };
+    case "VisualizationNode":
+      return {
+        ...baseValues,
+        visualization: (node as VisualizationNode).visualization,
+      };
+  }
+}
+
+/**
+ * Return the new properties for a node, given the edited version
+ * @param node The original value of the node
+ * @param edited The edited node
+ */
+function newNodeProperties(
+  node: Network.Node,
+  edited: EditorState
+): Network.Node {
+  const parents = () =>
+    edited.type === node.type
+      ? (node as Network.NodeWithParents).parents
+      : // Right now, we remove all parents if we change node type.
+        // In the future, we can try to match old and new parents better.
+        // For example, if there is only one input and it is the same
+        // type, we can just reuse it.
+        Network.emptyParentsMember(
+          edited.type,
+          edited.distribution,
+          edited.function,
+          edited.visualization
+        ).parents;
+
+  switch (edited.type) {
+    case "DistributionNode":
+      return {
+        type: edited.type,
+        justification: edited.justification,
+        coords: node.coords,
+        parents: parents(),
+        distribution: edited.distribution,
+      };
+    case "FunctionNode":
+      return {
+        type: edited.type,
+        justification: edited.justification,
+        coords: node.coords,
+        parents: parents(),
+        function: edited.function,
+      };
+    case "ConstantNode":
+      return {
+        type: edited.type,
+        justification: edited.justification,
+        coords: node.coords,
+        value: edited.value,
+      };
+    case "VisualizationNode":
+      return {
+        type: edited.type,
+        justification: edited.justification,
+        coords: node.coords,
+        parents: parents(),
+        visualization: edited.visualization,
+      };
+  }
+  // This should be unreachable
+  console.warn(
+    `Editor returning unknown node type: ${node.type} Coercing to ` +
+      "constant node."
+  );
+  return {
+    type: "ConstantNode",
+    justification: edited.justification,
+    coords: node.coords,
+    value: edited.value,
+  };
+}
+
+const startNodeEdit: WorkbenchReducer = (oldState, action) => {
+  const toEdit = (action as StartNodeEditCommand).toEdit;
+  return Immutable.merge(oldState, {
+    currentlyEditing: toEdit,
+    newProperties: {
+      ...editorProperties(oldState.beliefs.nodes[toEdit]),
+    },
   });
+};
 
 const moveNode: WorkbenchReducer = (oldState, action) => {
   const a = action as MoveNodeCommand;
