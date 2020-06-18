@@ -11,21 +11,9 @@ import {
   FunctionNode,
   VisualizationNode,
 } from "./nodes_type";
+import { EditorState } from "./editor-state";
 
 const Immutable = require("seamless-immutable");
-
-/**
- * The state of the Node editor form.
- */
-type EditorState = {
-  title: string;
-  justification: string;
-  type: Network.NodeType;
-  distribution: Network.DistributionType;
-  function: Network.FunctionType;
-  visualization: Network.VisualizationType;
-  value: Network.PrimitiveActualType;
-};
 
 type WorkbenchState = {
   /** The beliefs being edited */
@@ -71,6 +59,7 @@ const initialState: WorkbenchState = {
 enum CommandType {
   NoOp,
   StartEditingNode,
+  CancelEditingNode,
   MoveNode,
   LinkNodes,
   UnlinkNodes,
@@ -88,6 +77,10 @@ type WorkbenchReducer = (
 interface StartNodeEditCommand extends Command {
   type: CommandType.StartEditingNode;
   toEdit: string;
+}
+
+interface CancelNodeEditCommand extends Command {
+  type: CommandType.CancelEditingNode;
 }
 
 interface MoveNodeCommand extends Command {
@@ -245,6 +238,12 @@ const startNodeEdit: WorkbenchReducer = (oldState, action) => {
   });
 };
 
+const cancelNodeEdit: WorkbenchReducer = (oldState, action) => {
+  return Immutable.merge(oldState, {
+    currentlyEditing: null,
+  });
+};
+
 const moveNode: WorkbenchReducer = (oldState, action) => {
   const a = action as MoveNodeCommand;
   return Immutable.setIn(
@@ -337,6 +336,7 @@ function createDispatchTable() {
   let dispatchTable: DispatchTable = [];
   dispatchTable[CommandType.NoOp] = (state, _action) => state;
   dispatchTable[CommandType.StartEditingNode] = startNodeEdit;
+  dispatchTable[CommandType.CancelEditingNode] = cancelNodeEdit;
   dispatchTable[CommandType.MoveNode] = moveNode;
   dispatchTable[CommandType.LinkNodes] = linkNode;
   dispatchTable[CommandType.UnlinkNodes] = unlinkNode;
@@ -354,6 +354,12 @@ function createDispatchers(dispatch: React.Dispatch<Command>) {
       const cmd: StartNodeEditCommand = {
         type: CommandType.StartEditingNode,
         toEdit: toEdit,
+      };
+      return dispatch(cmd);
+    },
+    dispatchCancelNodeEdit: () => {
+      const cmd: CancelNodeEditCommand = {
+        type: CommandType.CancelEditingNode,
       };
       return dispatch(cmd);
     },
@@ -434,6 +440,7 @@ function BeliefWorkbench() {
           language={workbenchState.beliefs.language}
           modelName={workbenchState.beliefs.modelName}
           version="v0.0.1"
+          editorState={workbenchState.newProperties}
           singleNodeToEdit={workbenchState.currentlyEditing}
         />
         ,

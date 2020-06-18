@@ -5,6 +5,7 @@ import "./Editor.css";
 import { DispatchContext } from "./";
 import Diagram from "beautiful-react-diagrams";
 import * as DiagramSchema from "beautiful-react-diagrams/@types/DiagramSchema";
+import { EditorState } from "./editor-state";
 
 type Nodes = Network.Nodes;
 
@@ -388,15 +389,29 @@ const changeHandler: ChangeHandlerType = (
   };
 };
 
-const GraphDisplay = ({
-  nodes,
-  singleNodeToEdit,
+const NodeEditor = ({
   language,
+  editorState,
 }: {
-  nodes: Nodes;
-  singleNodeToEdit: string | null;
   language: string;
+  editorState: EditorState;
 }) => {
+  const { dispatchCancelNodeEdit } = useContext(DispatchContext);
+  return (
+    <section className="nodeEditor">
+      <p>Node editor not written yet</p>
+      <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>
+    </section>
+  );
+};
+
+function GraphEditor({
+  language,
+  nodes,
+}: {
+  language: string;
+  nodes: Network.Nodes;
+}) {
   const {
     dispatchStartNodeEdit,
     dispatchMoveNode,
@@ -409,23 +424,37 @@ const GraphDisplay = ({
     dispatchStartNodeEdit,
     dispatchDeleteNode
   );
-  const diagram = (
-    <Diagram
-      schema={schema}
-      onChange={changeHandler(
-        schema,
-        dispatchMoveNode,
-        dispatchLinkNodes,
-        dispatchUnlinkNodes
-      )}
-    />
-  );
-  const nodeEditor = <p>Node editor not written yet</p>;
   return (
     <section className="graphDisplay" lang={language}>
-      {singleNodeToEdit ? nodeEditor : diagram}
+      <Diagram
+        schema={schema}
+        onChange={changeHandler(
+          schema,
+          dispatchMoveNode,
+          dispatchLinkNodes,
+          dispatchUnlinkNodes
+        )}
+      />
     </section>
   );
+}
+
+const MainEditWindow = ({
+  nodes,
+  singleNodeToEdit,
+  editorState,
+  language,
+}: {
+  nodes: Nodes;
+  singleNodeToEdit: string | null;
+  editorState: EditorState;
+  language: string;
+}) => {
+  const diagram = () => <GraphEditor language={language} nodes={nodes} />;
+  const nodeEditor = () => (
+    <NodeEditor language={language} editorState={editorState} />
+  );
+  return singleNodeToEdit ? nodeEditor() : diagram();
 };
 
 function graphDisplayHeight(nodes: Network.Nodes): number {
@@ -439,12 +468,14 @@ const Editor = ({
   language,
   modelName,
   singleNodeToEdit,
+  editorState,
   version,
 }: {
   nodes: Nodes;
   language: string;
   modelName: string;
   singleNodeToEdit: string | null;
+  editorState: EditorState;
   version: string;
 }) => {
   if (singleNodeToEdit != null && !(singleNodeToEdit in nodes)) {
@@ -459,10 +490,11 @@ const Editor = ({
       <header className="mainHead" lang={language}>
         {modelName}: Belief Workbench {version}
       </header>
-      <GraphDisplay
+      <MainEditWindow
         nodes={nodes}
         singleNodeToEdit={singleNodeToEdit}
         language={language}
+        editorState={editorState}
       />
       <footer className="mainFooter">
         Copyright 2020 Eric Moyer. License:{" "}
