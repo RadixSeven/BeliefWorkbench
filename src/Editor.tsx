@@ -408,9 +408,17 @@ const NodeEditor = ({
       }}
     >
       <form>
-        <input type="submit" />
+        <label>
+          Title
+          <input lang={language} value={editorState.title} />
+        </label>
+        <label>
+          Justification
+          <textarea lang={language} value={editorState.justification} />
+        </label>
+        <button type="submit">Submit</button>
+        <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>
       </form>
-      <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>
     </section>
   );
 };
