@@ -1,8 +1,11 @@
+import { EditorState } from "./editor-state";
+
 export enum CommandType {
   NoOp,
   StartEditingNode,
   CancelEditingNode,
   FinishEditingNode,
+  UpdateEditorState,
   MoveNode,
   LinkNodes,
   UnlinkNodes,
@@ -24,6 +27,11 @@ export interface CancelNodeEditCommand extends Command {
 
 export interface FinishNodeEditCommand extends Command {
   type: CommandType.FinishEditingNode;
+}
+
+export interface UpdateEditorStateCommand extends Command {
+  type: CommandType.UpdateEditorState;
+  newState: EditorState;
 }
 
 export interface MoveNodeCommand extends Command {

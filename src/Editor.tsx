@@ -396,9 +396,29 @@ const NodeEditor = ({
   language: string;
   editorState: EditorState;
 }) => {
-  const { dispatchCancelNodeEdit, dispatchFinishNodeEdit } = useContext(
-    DispatchContext
-  );
+  const {
+    dispatchCancelNodeEdit,
+    dispatchFinishNodeEdit,
+    dispatchUpdateEditorState,
+  } = useContext(DispatchContext);
+  function fieldUpdater(fieldName: string) {
+    return (
+      e:
+        | React.ChangeEvent<HTMLTextAreaElement>
+        | React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const newState: EditorState = { ...editorState };
+      switch (fieldName) {
+        case "title":
+          newState["title"] = e.target.value;
+          break;
+        case "justification":
+          newState["justification"] = e.target.value;
+          break;
+      }
+      dispatchUpdateEditorState(newState);
+    };
+  }
   return (
     <section
       className="nodeEditor"
@@ -410,11 +430,19 @@ const NodeEditor = ({
       <form>
         <label>
           Title
-          <input lang={language} value={editorState.title} />
+          <input
+            lang={language}
+            value={editorState.title}
+            onChange={fieldUpdater("title")}
+          />
         </label>
         <label>
           Justification
-          <textarea lang={language} value={editorState.justification} />
+          <textarea
+            lang={language}
+            value={editorState.justification}
+            onChange={fieldUpdater("justification")}
+          />
         </label>
         <button type="submit">Submit</button>
         <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>

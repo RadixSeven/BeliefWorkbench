@@ -6,6 +6,7 @@ import {
   moveNode,
   startNodeEdit,
   unlinkNode,
+  updateEditorState,
   WorkbenchReducer,
 } from "./workbench-reducers";
 import {
@@ -18,8 +19,10 @@ import {
   MoveNodeCommand,
   StartNodeEditCommand,
   UnlinkNodesCommand,
+  UpdateEditorStateCommand,
 } from "./commands";
 import React from "react";
+import { EditorState } from "./editor-state";
 
 type DispatchTable = WorkbenchReducer[];
 const dispatchTable = createDispatchTable();
@@ -30,6 +33,7 @@ function createDispatchTable() {
   dispatchTable[CommandType.StartEditingNode] = startNodeEdit;
   dispatchTable[CommandType.CancelEditingNode] = cancelNodeEdit;
   dispatchTable[CommandType.FinishEditingNode] = finishNodeEdit;
+  dispatchTable[CommandType.UpdateEditorState] = updateEditorState;
   dispatchTable[CommandType.MoveNode] = moveNode;
   dispatchTable[CommandType.LinkNodes] = linkNode;
   dispatchTable[CommandType.UnlinkNodes] = unlinkNode;
@@ -59,6 +63,13 @@ export function createDispatchers(dispatch: React.Dispatch<Command>) {
     dispatchFinishNodeEdit: () => {
       const cmd: FinishNodeEditCommand = {
         type: CommandType.FinishEditingNode,
+      };
+      return dispatch(cmd);
+    },
+    dispatchUpdateEditorState: (newState: EditorState) => {
+      const cmd: UpdateEditorStateCommand = {
+        type: CommandType.UpdateEditorState,
+        newState: newState,
       };
       return dispatch(cmd);
     },

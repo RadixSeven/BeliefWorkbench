@@ -4,6 +4,7 @@ import {
   LinkNodesCommand,
   MoveNodeCommand,
   StartNodeEditCommand,
+  UpdateEditorStateCommand,
 } from "./commands";
 import { EditorState } from "./editor-state";
 import { mapParents, WorkbenchState } from "./workbench-state";
@@ -175,6 +176,13 @@ export const cancelNodeEdit: WorkbenchReducer = (oldState, _action) => {
     currentlyEditing: null,
   });
 };
+
+export const updateEditorState: WorkbenchReducer = (oldState, action) => {
+  return Immutable.merge(oldState, {
+    newProperties: (action as UpdateEditorStateCommand).newState,
+  });
+};
+
 export const moveNode: WorkbenchReducer = (oldState, action) => {
   const a = action as MoveNodeCommand;
   return Immutable.setIn(
