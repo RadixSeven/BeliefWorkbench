@@ -6,6 +6,7 @@ import { DispatchContext } from "./";
 import Diagram from "beautiful-react-diagrams";
 import * as DiagramSchema from "beautiful-react-diagrams/@types/DiagramSchema";
 import { EditorState } from "./editor-state";
+import { NodeTypeR } from "./nodes_type";
 
 type Nodes = Network.Nodes;
 
@@ -406,6 +407,7 @@ const NodeEditor = ({
       e:
         | React.ChangeEvent<HTMLTextAreaElement>
         | React.ChangeEvent<HTMLInputElement>
+        | React.ChangeEvent<HTMLSelectElement>
     ) => {
       const newState: EditorState = { ...editorState };
       switch (fieldName) {
@@ -414,6 +416,9 @@ const NodeEditor = ({
           break;
         case "justification":
           newState["justification"] = e.target.value;
+          break;
+        case "type":
+          newState["type"] = NodeTypeR.check(e.target.value);
           break;
       }
       dispatchUpdateEditorState(newState);
@@ -443,6 +448,16 @@ const NodeEditor = ({
             value={editorState.justification}
             onChange={fieldUpdater("justification")}
           />
+        </label>
+        <label>
+          Type
+          <select value={editorState.type} onChange={fieldUpdater("type")}>
+            {Network.NodeTypeR.alternatives.map((nodeType) => (
+              <option value={nodeType.value}>
+                {Network.nodeProps[nodeType.value].name}
+              </option>
+            ))}
+          </select>
         </label>
         <button type="submit">Submit</button>
         <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>
