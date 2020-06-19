@@ -6,7 +6,12 @@ import { DispatchContext } from "./";
 import Diagram from "beautiful-react-diagrams";
 import * as DiagramSchema from "beautiful-react-diagrams/@types/DiagramSchema";
 import { EditorState } from "./editor-state";
-import { NodeTypeR } from "./nodes_type";
+import {
+  distributionProps,
+  functionProps,
+  NodeTypeR,
+  visualizationProps,
+} from "./nodes_type";
 
 type Nodes = Network.Nodes;
 
@@ -30,9 +35,10 @@ function nodeContent(
     </span>
   );
 
-  const addButtons = (text: string) => (
+  const addButtons = (title: string, subtitle: string) => (
     <div className="node-contents">
-      <p className="node-text">{text}</p>
+      <p className="node-text">{title}</p>
+      <p className="node-subtitle">{subtitle}</p>
       <div className="node-controls">
         {deleteIcon}
         {editIcon}
@@ -40,19 +46,17 @@ function nodeContent(
     </div>
   );
 
-  const justTitle = addButtons(title);
-
   switch (node.type) {
     case "DistributionNode":
-      return justTitle;
+      return addButtons(title, distributionProps[node.distribution].name);
     case "FunctionNode":
-      return justTitle;
+      return addButtons(title, functionProps[node.function].name);
     case "ConstantNode": {
       const cn = node as Network.ConstantNode;
-      return addButtons(title + ": " + JSON.stringify(cn.value));
+      return addButtons(title, JSON.stringify(cn.value));
     }
     case "VisualizationNode":
-      return justTitle;
+      return addButtons(title, visualizationProps[node.visualization].name);
   }
 }
 
