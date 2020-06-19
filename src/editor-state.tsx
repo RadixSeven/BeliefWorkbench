@@ -12,3 +12,13 @@ export type EditorState = {
   visualization: Network.VisualizationType;
   value: Network.PrimitiveActualType;
 };
+
+export const stubEditorState: EditorState = {
+  title: "Stub Title",
+  justification: "Stub justification",
+  type: "DistributionNode",
+  distribution: "ContinuousUniform",
+  function: "Add",
+  visualization: "1DHistogram",
+  value: 0,
+};
