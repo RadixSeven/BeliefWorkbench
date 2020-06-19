@@ -182,6 +182,20 @@ function emptyParentsMemberFromProperties(props: TypeProperties) {
   };
 }
 
+export type NodePropertyMap = {
+  [type in NodeType]: {
+    name: string;
+  };
+};
+
+export const nodeProps: NodePropertyMap = {
+  DistributionNode: { name: "Distribution" },
+  FunctionNode: { name: "Function" },
+  VisualizationNode: { name: "Visualization" },
+  ConstantNode: { name: "Assumed Value" },
+  ConstraintNode: { name: "Constraint" },
+};
+
 export type DistributionPropertyMap = {
   [type in DistributionType]: TypeProperties;
 };
