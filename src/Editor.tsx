@@ -396,10 +396,20 @@ const NodeEditor = ({
   language: string;
   editorState: EditorState;
 }) => {
-  const { dispatchCancelNodeEdit } = useContext(DispatchContext);
+  const { dispatchCancelNodeEdit, dispatchFinishNodeEdit } = useContext(
+    DispatchContext
+  );
   return (
-    <section className="nodeEditor">
-      <p>Node editor not written yet</p>
+    <section
+      className="nodeEditor"
+      onSubmit={(_event) => {
+        _event.preventDefault();
+        dispatchFinishNodeEdit();
+      }}
+    >
+      <form>
+        <input type="submit" />
+      </form>
       <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>
     </section>
   );

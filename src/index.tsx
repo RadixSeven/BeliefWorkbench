@@ -12,28 +12,9 @@ import {
   VisualizationNode,
 } from "./nodes_type";
 import { EditorState } from "./editor-state";
+import { mapParents, WorkbenchState } from "./workbench-state";
 
 const Immutable = require("seamless-immutable");
-
-type WorkbenchState = {
-  /** The beliefs being edited */
-  beliefs: {
-    nodes: Network.Nodes;
-    language: string;
-    modelName: string;
-  };
-  /** The current key of the node currently being edited (or null if not
-   *  editing a node.) */
-  currentlyEditing: string | null;
-  /**
-   * The properties the edited node will have (if it is the right type)
-   *
-   * This is also the state of the node editor form.
-   */
-  newProperties: EditorState;
-  /** The URL for storing the current beliefs */
-  currentURL: string | null;
-};
 
 const defaultEditorState: EditorState = {
   title: "",
@@ -60,6 +41,7 @@ enum CommandType {
   NoOp,
   StartEditingNode,
   CancelEditingNode,
+  FinishEditingNode,
   MoveNode,
   LinkNodes,
   UnlinkNodes,
@@ -81,6 +63,10 @@ interface StartNodeEditCommand extends Command {
 
 interface CancelNodeEditCommand extends Command {
   type: CommandType.CancelEditingNode;
+}
+
+interface FinishNodeEditCommand extends Command {
+  type: CommandType.FinishEditingNode;
 }
 
 interface MoveNodeCommand extends Command {
@@ -234,11 +220,53 @@ const startNodeEdit: WorkbenchReducer = (oldState, action) => {
     currentlyEditing: toEdit,
     newProperties: {
       ...editorProperties(oldState.beliefs.nodes[toEdit]),
+      title: toEdit,
     },
   });
 };
 
-const cancelNodeEdit: WorkbenchReducer = (oldState, action) => {
+const finishNodeEdit: WorkbenchReducer = (oldState, _action) => {
+  const toEdit = oldState.currentlyEditing;
+  if (!(toEdit && toEdit in oldState.beliefs.nodes)) {
+    console.error(
+      "Tried to finish editing but the record of the node being " +
+        "edited was corrupted. It read: " +
+        JSON.stringify(toEdit)
+    );
+    // Cancel the bad edit
+    return Immutable.merge(oldState, {
+      currentlyEditing: null,
+    });
+  }
+  const edited = oldState.newProperties;
+  const newNodeVal = newNodeProperties(oldState.beliefs.nodes[toEdit], edited);
+  const withCorrectTitle =
+    edited.title === toEdit
+      ? oldState
+      : (() => {
+          // Rename this node in all its descendants
+          const renamed = mapParents(oldState, (nodeId, portId, parentIds) =>
+            parentIds.map((id: string) => (id === toEdit ? edited.title : id))
+          );
+          // Remove the node with the old title
+          return Immutable.setIn(
+            renamed,
+            ["beliefs", "nodes"],
+            Immutable.without(renamed.beliefs.nodes, toEdit)
+          );
+        })();
+  const newBeliefs = Immutable.setIn(
+    withCorrectTitle,
+    ["beliefs", "nodes", edited.title],
+    newNodeVal
+  );
+
+  return Immutable.merge(newBeliefs, {
+    currentlyEditing: null,
+  });
+};
+
+const cancelNodeEdit: WorkbenchReducer = (oldState, _action) => {
   return Immutable.merge(oldState, {
     currentlyEditing: null,
   });
@@ -295,38 +323,8 @@ const deleteNode: WorkbenchReducer = (oldState, action) => {
     newBranch
   );
 
-  const deleteFromParentsList = (parentList: Array<string>) =>
-    parentList.filter((parent: string) => parent !== a.nodeIdToDelete);
-
-  const deleteFromDescendantWithParents = (
-    node: Network.NodeWithParents
-  ): Network.Node =>
-    Immutable.set(
-      node,
-      "parents",
-      Immutable.asObject(
-        Object.entries(node.parents).map(
-          ([portId, parentList]: [string, Array<string>]) => {
-            return [portId, deleteFromParentsList(parentList)];
-          }
-        )
-      )
-    );
-
-  const deleteFromDescendant = (node: Network.Node): Network.Node =>
-    "parents" in node ? deleteFromDescendantWithParents(node) : node;
-
-  return Immutable.setIn(
-    withoutNode,
-    ["beliefs", "nodes"],
-    Immutable.asObject(
-      (Object.entries(withoutNode.beliefs.nodes) as Array<
-        [string, Network.Node]
-      >).map(([nodeId, node]: [string, Network.Node]) => [
-        nodeId,
-        deleteFromDescendant(node),
-      ])
-    )
+  return mapParents(withoutNode, (nodeId, portId, parentIds) =>
+    parentIds.filter((id) => id !== a.nodeIdToDelete)
   );
 };
 
@@ -337,6 +335,7 @@ function createDispatchTable() {
   dispatchTable[CommandType.NoOp] = (state, _action) => state;
   dispatchTable[CommandType.StartEditingNode] = startNodeEdit;
   dispatchTable[CommandType.CancelEditingNode] = cancelNodeEdit;
+  dispatchTable[CommandType.FinishEditingNode] = finishNodeEdit;
   dispatchTable[CommandType.MoveNode] = moveNode;
   dispatchTable[CommandType.LinkNodes] = linkNode;
   dispatchTable[CommandType.UnlinkNodes] = unlinkNode;
@@ -360,6 +359,12 @@ function createDispatchers(dispatch: React.Dispatch<Command>) {
     dispatchCancelNodeEdit: () => {
       const cmd: CancelNodeEditCommand = {
         type: CommandType.CancelEditingNode,
+      };
+      return dispatch(cmd);
+    },
+    dispatchFinishNodeEdit: () => {
+      const cmd: FinishNodeEditCommand = {
+        type: CommandType.FinishEditingNode,
       };
       return dispatch(cmd);
     },
