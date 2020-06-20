@@ -8,6 +8,7 @@ import * as DiagramSchema from "beautiful-react-diagrams/@types/DiagramSchema";
 import { EditorState } from "./editor-state";
 import {
   distributionProps,
+  DistributionTypeR,
   functionProps,
   NodeTypeR,
   visualizationProps,
@@ -396,12 +397,32 @@ const changeHandler: ChangeHandlerType = (
 
 function DistributionEditor({
   language,
-  dist,
+  editorState,
 }: {
   language: string;
-  dist: Network.DistributionType;
+  editorState: EditorState;
 }): ReactElement {
-  return <p>Distribution Editor Unimplemented</p>;
+  const { dispatchUpdateEditorState } = useContext(DispatchContext);
+  return (
+    <label>
+      Type
+      <select
+        value={editorState.distribution}
+        onChange={(e) =>
+          dispatchUpdateEditorState({
+            ...editorState,
+            distribution: DistributionTypeR.check(e.target.value),
+          })
+        }
+      >
+        {Network.DistributionTypeR.alternatives.map((distT) => (
+          <option value={distT.value}>
+            {Network.distributionProps[distT.value].name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 function FunctionEditor({
@@ -454,10 +475,7 @@ function NodeTypeSpecificPropertiesEditor({
   switch (editorState.type) {
     case "DistributionNode":
       return (
-        <DistributionEditor
-          language={language}
-          dist={editorState.distribution}
-        />
+        <DistributionEditor language={language} editorState={editorState} />
       );
     case "FunctionNode":
       return <FunctionEditor language={language} func={editorState.function} />;
