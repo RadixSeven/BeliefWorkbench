@@ -405,7 +405,7 @@ function DistributionEditor({
   const { dispatchUpdateEditorState } = useContext(DispatchContext);
   return (
     <label>
-      Type
+      Distribution
       <select
         value={editorState.distribution}
         onChange={(e) =>
@@ -427,12 +427,32 @@ function DistributionEditor({
 
 function FunctionEditor({
   language,
-  func,
+  editorState,
 }: {
   language: string;
-  func: Network.FunctionType;
+  editorState: EditorState;
 }): ReactElement {
-  return <p>Function Editor Unimplemented</p>;
+  const { dispatchUpdateEditorState } = useContext(DispatchContext);
+  return (
+    <label>
+      Function
+      <select
+        value={editorState.distribution}
+        onChange={(e) =>
+          dispatchUpdateEditorState({
+            ...editorState,
+            function: Network.FunctionTypeR.check(e.target.value),
+          })
+        }
+      >
+        {Network.FunctionTypeR.alternatives.map((distT) => (
+          <option value={distT.value}>
+            {Network.functionProps[distT.value].name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 function ConstantEditor({
@@ -478,7 +498,7 @@ function NodeTypeSpecificPropertiesEditor({
         <DistributionEditor language={language} editorState={editorState} />
       );
     case "FunctionNode":
-      return <FunctionEditor language={language} func={editorState.function} />;
+      return <FunctionEditor language={language} editorState={editorState} />;
     case "ConstantNode":
       return <ConstantEditor language={language} value={editorState.value} />;
     case "ConstraintNode":
