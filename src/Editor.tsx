@@ -394,6 +394,87 @@ const changeHandler: ChangeHandlerType = (
   };
 };
 
+function DistributionEditor({
+  language,
+  dist,
+}: {
+  language: string;
+  dist: Network.DistributionType;
+}): ReactElement {
+  return <p>Distribution Editor Unimplemented</p>;
+}
+
+function FunctionEditor({
+  language,
+  func,
+}: {
+  language: string;
+  func: Network.FunctionType;
+}): ReactElement {
+  return <p>Function Editor Unimplemented</p>;
+}
+
+function ConstantEditor({
+  language,
+  value,
+}: {
+  language: string;
+  value: Network.PrimitiveActualType;
+}): ReactElement {
+  return <p>Constant Editor Unimplemented</p>;
+}
+
+function ConstraintEditor({
+  language,
+  value,
+}: {
+  language: string;
+  value: Network.PrimitiveActualType;
+}): ReactElement {
+  return <p>Constraint Editor Unimplemented</p>;
+}
+
+function VisualizationEditor({
+  language,
+  visualization,
+}: {
+  language: string;
+  visualization: Network.VisualizationType;
+}): ReactElement {
+  return <p>Visualization Editor Unimplemented</p>;
+}
+
+function NodeTypeSpecificPropertiesEditor({
+  language,
+  editorState,
+}: {
+  language: string;
+  editorState: EditorState;
+}) {
+  switch (editorState.type) {
+    case "DistributionNode":
+      return (
+        <DistributionEditor
+          language={language}
+          dist={editorState.distribution}
+        />
+      );
+    case "FunctionNode":
+      return <FunctionEditor language={language} func={editorState.function} />;
+    case "ConstantNode":
+      return <ConstantEditor language={language} value={editorState.value} />;
+    case "ConstraintNode":
+      return <ConstraintEditor language={language} value={editorState.value} />;
+    case "VisualizationNode":
+      return (
+        <VisualizationEditor
+          language={language}
+          visualization={editorState.visualization}
+        />
+      );
+  }
+}
+
 const NodeEditor = ({
   language,
   editorState,
@@ -463,6 +544,10 @@ const NodeEditor = ({
             ))}
           </select>
         </label>
+        <NodeTypeSpecificPropertiesEditor
+          language={language}
+          editorState={editorState}
+        />
         <button type="submit">Submit</button>
         <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>
       </form>
