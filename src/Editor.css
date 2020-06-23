@@ -20,13 +20,20 @@
   font-weight: lighter;
 }
 
+.main-controls {
+  grid-area: mainControls;
+  border-style: solid;
+
+}
+
 .editor {
   display: grid;
   grid-gap: 20px;
-  grid-template-rows: 15px 550px 15px;
+  grid-template-rows: 15px 550px 20px 15px;
   grid-template-areas:
     "header"
     "mainEditArea"
+    "mainControls"
     "footer";
 }
 
