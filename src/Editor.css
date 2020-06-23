@@ -46,6 +46,22 @@
 .delete-icon {
 }
 
+.constant-error {
+  color:red;
+}
+
+.constant-error-message {
+  font-size: smaller;
+}
+
+.title-error {
+  color:red;
+}
+
+.title-error-message {
+  font-size: smaller;
+}
+
 p.node-text {
   margin-bottom: 0;
 }

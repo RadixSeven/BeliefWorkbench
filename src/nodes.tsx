@@ -6,18 +6,21 @@ const nodes: Nodes = Immutable({
     justification: "We needed a zero constant",
     type: "ConstantNode",
     coords: [100, 100],
+    valueType: "Number",
     value: 0,
   },
   One: {
     justification: "We needed a one constant",
     type: "ConstantNode",
     coords: [200, 100],
+    valueType: "Number",
     value: 1,
   },
   Primes: {
     justification: "List of the smallest primes",
     type: "ConstantNode",
     coords: [300, 100],
+    valueType: "List",
     value: [2, 3, 5, 7, 11, 13, 17, 19],
   },
   "The node's title": {

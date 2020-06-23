@@ -6,13 +6,15 @@ import {
   StartNodeEditCommand,
   UpdateEditorStateCommand,
 } from "./commands";
-import { EditorState } from "./editor-state";
+import { checkConstantValue, EditorState } from "./editor-state";
 import { mapParents, WorkbenchState } from "./workbench-state";
 import * as Network from "./nodes_type";
 import {
   ConstantNode,
+  ConstraintNode,
   DistributionNode,
   FunctionNode,
+  nodeProps,
   VisualizationNode,
 } from "./nodes_type";
 
@@ -35,11 +37,34 @@ function editorProperties(node: Network.Node): EditorState {
         ...baseValues,
         function: (node as FunctionNode).function,
       };
-    case "ConstantNode":
+    case "ConstantNode": {
+      const nodeVal = (node as ConstantNode).value;
+      const strVal: string =
+        typeof nodeVal === "number"
+          ? "" + nodeVal
+          : typeof nodeVal === "string"
+          ? nodeVal
+          : JSON.stringify(nodeVal);
       return {
         ...baseValues,
-        value: (node as ConstantNode).value,
+        valueType: (node as ConstantNode).valueType,
+        value: strVal,
       };
+    }
+    case "ConstraintNode": {
+      const nodeVal = (node as ConstraintNode).value;
+      const strVal: string =
+        typeof nodeVal === "number"
+          ? "" + nodeVal
+          : typeof nodeVal === "string"
+          ? nodeVal
+          : JSON.stringify(nodeVal);
+      return {
+        ...baseValues,
+        valueType: (node as ConstraintNode).valueType,
+        value: strVal,
+      };
+    }
     case "VisualizationNode":
       return {
         ...baseValues,
@@ -50,13 +75,13 @@ function editorProperties(node: Network.Node): EditorState {
 
 /**
  * Return the new properties for a node, given the edited version
- * @param node The original value of the node
+ * @param node The original editorState of the node
  * @param edited The edited node
  */
 function newNodeProperties(
   node: Network.Node,
   edited: EditorState
-): Network.Node {
+): { newNodeVal: Network.Node | null; errorMessages: string[] } {
   const parents = () =>
     edited.type === node.type
       ? (node as Network.NodeWithParents).parents
@@ -71,37 +96,73 @@ function newNodeProperties(
           edited.visualization
         ).parents;
 
+  const { isValid, parsedValue, messages } = checkConstantValue(
+    edited.value,
+    edited.valueType
+  );
+  if (nodeProps[edited.type].hasValueField && !isValid) {
+    console.error(
+      `Invalid node value specified by editor. ${edited.value} is not an example of the "${edited.valueType}" type. Specific errors:\n` +
+        messages.join("\n")
+    );
+    return { newNodeVal: null, errorMessages: messages };
+  }
   switch (edited.type) {
+    case "ConstraintNode":
+      return {
+        newNodeVal: {
+          type: edited.type,
+          justification: edited.justification,
+          coords: node.coords,
+          parents: parents(),
+          valueType: edited.valueType,
+          value: parsedValue,
+        },
+        errorMessages: [],
+      };
     case "DistributionNode":
       return {
-        type: edited.type,
-        justification: edited.justification,
-        coords: node.coords,
-        parents: parents(),
-        distribution: edited.distribution,
+        newNodeVal: {
+          type: edited.type,
+          justification: edited.justification,
+          coords: node.coords,
+          parents: parents(),
+          distribution: edited.distribution,
+        },
+        errorMessages: [],
       };
     case "FunctionNode":
       return {
-        type: edited.type,
-        justification: edited.justification,
-        coords: node.coords,
-        parents: parents(),
-        function: edited.function,
+        newNodeVal: {
+          type: edited.type,
+          justification: edited.justification,
+          coords: node.coords,
+          parents: parents(),
+          function: edited.function,
+        },
+        errorMessages: [],
       };
     case "ConstantNode":
       return {
-        type: edited.type,
-        justification: edited.justification,
-        coords: node.coords,
-        value: edited.value,
+        newNodeVal: {
+          type: edited.type,
+          justification: edited.justification,
+          coords: node.coords,
+          valueType: edited.valueType,
+          value: parsedValue,
+        },
+        errorMessages: [],
       };
     case "VisualizationNode":
       return {
-        type: edited.type,
-        justification: edited.justification,
-        coords: node.coords,
-        parents: parents(),
-        visualization: edited.visualization,
+        newNodeVal: {
+          type: edited.type,
+          justification: edited.justification,
+          coords: node.coords,
+          parents: parents(),
+          visualization: edited.visualization,
+        },
+        errorMessages: [],
       };
   }
   // This should be unreachable
@@ -110,10 +171,14 @@ function newNodeProperties(
       "constant node."
   );
   return {
-    type: "ConstantNode",
-    justification: edited.justification,
-    coords: node.coords,
-    value: edited.value,
+    newNodeVal: {
+      type: "ConstantNode",
+      justification: edited.justification,
+      coords: node.coords,
+      valueType: edited.valueType,
+      value: edited.value,
+    },
+    errorMessages: [`Editor returning unknown node type: ${node.type}`],
   };
 }
 
@@ -145,7 +210,24 @@ export const finishNodeEdit: WorkbenchReducer = (oldState, _action) => {
     });
   }
   const edited = oldState.newProperties;
-  const newNodeVal = newNodeProperties(oldState.beliefs.nodes[toEdit], edited);
+  const { newNodeVal, errorMessages } = newNodeProperties(
+    oldState.beliefs.nodes[toEdit],
+    edited
+  );
+  if (edited.title !== toEdit && edited.title in oldState.beliefs.nodes) {
+    console.error(
+      `Attempt to change the title to one already in the network: ${edited.title}.`
+    );
+    return oldState;
+  }
+  if (newNodeVal === null) {
+    console.error(
+      `An unusable edit got past the node validation and submit was called. Ignoring. The program will remain in edit mode. The value of the bad node was ${JSON.stringify(
+        toEdit
+      )}\nError messages: ${JSON.stringify(errorMessages)}`
+    );
+    return oldState;
+  }
   const withCorrectTitle =
     edited.title === toEdit
       ? oldState
@@ -242,5 +324,6 @@ export const defaultEditorState: EditorState = {
   distribution: "DiscreteUniform",
   function: "Add",
   visualization: "1DHistogram",
-  value: 0,
+  valueType: "Number",
+  value: "0",
 };

@@ -25,7 +25,7 @@ export type WorkbenchState = {
 
 /**
  * Map over all ports in all nodes, returning a copy that replaces the list of parents for
- * a given port with the return value for a the callback
+ * a given port with the return editorState for a the callback
  * @param oldState The state to be modified
  * @param callback The callback that updates the parents list
  */

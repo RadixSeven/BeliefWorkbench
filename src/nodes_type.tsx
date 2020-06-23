@@ -1,13 +1,13 @@
 import {
-  Union,
-  Literal,
-  Static,
   Array,
-  String,
-  Record,
-  Dictionary,
-  Number,
   Boolean,
+  Dictionary,
+  Literal,
+  Number,
+  Record,
+  Static,
+  String,
+  Union,
 } from "runtypes";
 
 export const DistributionTypeR = Union(
@@ -126,16 +126,54 @@ export const PrimitiveActualTypeR = Union(
   PrimitiveActualTypeR6,
   Array(PrimitiveActualTypeR6)
 );
+/** Only types in PrimitiveActualType that are lists */
+export const PrimitiveActualTypeListOnlyR = Array(PrimitiveActualTypeR6);
+export type PrimitiveActualTypeListOnly = Static<
+  typeof PrimitiveActualTypeListOnlyR
+>;
 export type PrimitiveActualType = Static<typeof PrimitiveActualTypeR>;
+
+export const ExpectedValueTypeR = Union(
+  Literal("Number"),
+  Literal("Text"),
+  Literal("List")
+);
+export type ExpectedValueType = Static<typeof ExpectedValueTypeR>;
+export type ExpectedValueTypePropertyMap = {
+  [t in ExpectedValueType]: { name: string };
+};
+export const expectedValueTypeProps: ExpectedValueTypePropertyMap = {
+  Number: { name: "Number" },
+  Text: { name: "Text" },
+  List: { name: "List" },
+};
 
 export const ConstantNodeR = Record({
   // The unique title string (which is also the node id) is the key in the Nodes map
   justification: String,
   coords: Array(Number),
   type: Literal("ConstantNode"),
+  valueType: ExpectedValueTypeR,
   value: PrimitiveActualTypeR,
 });
 export type ConstantNode = Static<typeof ConstantNodeR>;
+
+export const ConstraintNodeR = Record({
+  // The unique title string (which is also the node id) is the key in the Nodes map
+  justification: String,
+  coords: Array(Number),
+  /// The parents of the given node ... along with which parameter
+  /// they attach to.
+  ///
+  /// I made parents part of the node structure rather than having
+  /// separate edge objects because I think it will be easier
+  /// to follow in the Github diffs
+  parents: Dictionary(Array(String), "string"),
+  type: Literal("ConstraintNode"),
+  valueType: ExpectedValueTypeR,
+  value: PrimitiveActualTypeR,
+});
+export type ConstraintNode = Static<typeof ConstraintNodeR>;
 
 export const VisualizationNodeR = Record({
   // The unique title string (which is also the node id) is the key in the Nodes map
@@ -156,7 +194,8 @@ export type VisualizationNode = Static<typeof VisualizationNodeR>;
 export const NodeWithParentsR = Union(
   DistributionNodeR,
   FunctionNodeR,
-  VisualizationNodeR
+  VisualizationNodeR,
+  ConstraintNodeR
 );
 export type NodeWithParents = Static<typeof NodeWithParentsR>;
 
@@ -185,15 +224,16 @@ function emptyParentsMemberFromProperties(props: TypeProperties) {
 export type NodePropertyMap = {
   [type in NodeType]: {
     name: string;
+    hasValueField: boolean;
   };
 };
 
 export const nodeProps: NodePropertyMap = {
-  DistributionNode: { name: "Distribution" },
-  FunctionNode: { name: "Function" },
-  VisualizationNode: { name: "Visualization" },
-  ConstantNode: { name: "Assumed Value" },
-  ConstraintNode: { name: "Constraint" },
+  DistributionNode: { name: "Distribution", hasValueField: false },
+  FunctionNode: { name: "Function", hasValueField: false },
+  VisualizationNode: { name: "Visualization", hasValueField: false },
+  ConstantNode: { name: "Assumed Value", hasValueField: true },
+  ConstraintNode: { name: "Constraint", hasValueField: true },
 };
 
 export type DistributionPropertyMap = {

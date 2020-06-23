@@ -1,23 +1,9 @@
 import * as Network from "./nodes_type";
-import { Literal, String, Union, Boolean, Number } from "runtypes";
-import { PrimitiveActualTypeR } from "./nodes_type";
-
-export const ExpectedValueTypeR = Union(
-  Literal("Number"),
-  Literal("Text"),
-  Literal("List")
-);
-export type ExpectedValueType = "Number" | "Text" | "List"; //= Static<typeof ExpectedValueTypeR>;
-
-export type ExpectedValueTypePropertyMap = {
-  [t in ExpectedValueType]: { name: string };
-};
-
-export const expectedValueTypeProps: ExpectedValueTypePropertyMap = {
-  Number: { name: "Number" },
-  Text: { name: "Text" },
-  List: { name: "List" },
-};
+import {
+  ExpectedValueType,
+  nodeProps,
+  PrimitiveActualType,
+} from "./nodes_type";
 
 /**
  * The state of the Node editor form.
@@ -44,34 +30,97 @@ export const stubEditorState: EditorState = {
   value: "0",
 };
 
-function isValidList(value: string): boolean {
+function checkConstantList(
+  value: string
+): {
+  isValid: boolean;
+  parsedValue: Network.PrimitiveActualTypeListOnly;
+  messages: string[];
+} {
+  let validParse = false;
   try {
     const v = JSON.parse(value);
+    validParse = true;
     Network.PrimitiveActualTypeListOnlyR.check(v);
+    return { isValid: true, parsedValue: v, messages: [] };
   } catch (e) {
     if (value.charAt(0) === "[" && value.endsWith("]")) {
-      return false;
+      const msg = validParse
+        ? ["The list must only contain text, numbers, or other lists."]
+        : ["The list is not a valid JSON list."];
+      return { isValid: false, parsedValue: [], messages: msg };
     } else {
-      return isValidList("[" + value + "]");
+      return checkConstantList("[" + value + "]");
     }
   }
-  return true;
 }
 
 const isNumberRegex = /^\s*(?:[+-]?\d+(?:[+-]?[eE][+-]?\d+)?|[+-]?\d*\.\d+(?:[eE][+-]?\d+)?)\s*$/;
 
 /**
- * Return true if "value" is a valid string representation of "type"
+ * Return true if "value" is a valid string representation of "type".
  * @param value The representation being checked
  * @param type The type being checked for
  */
-export function isValidValue(value: string, type: ExpectedValueType): boolean {
+export function checkConstantValue(
+  value: string,
+  type: ExpectedValueType
+): { isValid: boolean; parsedValue: PrimitiveActualType; messages: string[] } {
   switch (type) {
     case "Number":
-      return isFinite(parseFloat(value)) && !!value.match(isNumberRegex);
+      const parsed = parseFloat(value);
+      const finite = isFinite(parsed);
+      const isOnlyNumber = !!value.match(isNumberRegex);
+      const valid = finite && isOnlyNumber;
+      const msg = isOnlyNumber
+        ? ["Must only be a number"]
+        : ["Must be a normal number, not infinity or NaN"];
+      return { isValid: valid, parsedValue: parsed, messages: msg };
     case "Text":
-      return true;
+      return { isValid: true, parsedValue: value, messages: [] };
     case "List":
-      return isValidList(value);
+      return checkConstantList(value);
   }
+}
+
+export interface StateValidity {
+  isValid: boolean;
+  messages: string[];
+}
+
+const identityValidity: StateValidity = { isValid: true, messages: [] };
+
+function combineStateValidities(validities: StateValidity[]): StateValidity {
+  return validities.reduce(
+    (prev, cur) => ({
+      isValid: prev.isValid && cur.isValid,
+      messages: prev.messages.concat(cur.messages),
+    }),
+    identityValidity
+  );
+}
+
+export function checkTitle(
+  nodeTitles: string[],
+  originalTitle: string,
+  newTitle: string
+): StateValidity {
+  if (originalTitle !== newTitle && nodeTitles.includes(newTitle)) {
+    return { isValid: false, messages: ["Title is not unique"] };
+  } else {
+    return { isValid: true, messages: [] };
+  }
+}
+
+export function checkEditorState(
+  nodeTitles: string[],
+  originalTitle: string,
+  editorState: EditorState
+): StateValidity {
+  return combineStateValidities([
+    checkTitle(nodeTitles, originalTitle, editorState.title),
+    nodeProps[editorState.type].hasValueField
+      ? checkConstantValue(editorState.value, editorState.valueType)
+      : identityValidity,
+  ]);
 }

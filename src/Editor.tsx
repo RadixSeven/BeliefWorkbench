@@ -5,10 +5,17 @@ import "./Editor.css";
 import { DispatchContext } from "./";
 import Diagram from "beautiful-react-diagrams";
 import * as DiagramSchema from "beautiful-react-diagrams/@types/DiagramSchema";
-import { EditorState } from "./editor-state";
+import {
+  checkConstantValue,
+  checkEditorState,
+  checkTitle,
+  EditorState,
+} from "./editor-state";
 import {
   distributionProps,
   DistributionTypeR,
+  expectedValueTypeProps,
+  ExpectedValueTypeR,
   functionProps,
   NodeTypeR,
   visualizationProps,
@@ -304,7 +311,7 @@ function sortInputsAndOutputs(
 /**
  * Extracts parameters of Linkage from DiagramSchema.Link
  * On success, returns a singleton array containing the extracted
- * value. Otherwise, returns an empty array. This can be flat-mapped
+ * editorState. Otherwise, returns an empty array. This can be flat-mapped
  * over to eliminate the bad extractions. (Ideally there will be none
  * but we're encoding and decoding metadata in id strings which is
  * error-prone, so I'm trying to make this a little more robust.)
@@ -396,10 +403,8 @@ const changeHandler: ChangeHandlerType = (
 };
 
 function DistributionEditor({
-  language,
   editorState,
 }: {
-  language: string;
   editorState: EditorState;
 }): ReactElement {
   const { dispatchUpdateEditorState } = useContext(DispatchContext);
@@ -415,8 +420,8 @@ function DistributionEditor({
           })
         }
       >
-        {Network.DistributionTypeR.alternatives.map((distT) => (
-          <option value={distT.value}>
+        {Network.DistributionTypeR.alternatives.map((distT, index) => (
+          <option value={distT.value} key={index}>
             {Network.distributionProps[distT.value].name}
           </option>
         ))}
@@ -445,8 +450,8 @@ function FunctionEditor({
           })
         }
       >
-        {Network.FunctionTypeR.alternatives.map((distT) => (
-          <option value={distT.value}>
+        {Network.FunctionTypeR.alternatives.map((distT, index) => (
+          <option value={distT.value} key={index}>
             {Network.functionProps[distT.value].name}
           </option>
         ))}
@@ -455,34 +460,132 @@ function FunctionEditor({
   );
 }
 
-function ConstantEditor({
+function ValueNodeEditor({
   language,
-  value,
+  editorState,
+  valueTypeMessage,
+  valueMessage,
 }: {
   language: string;
-  value: Network.PrimitiveActualType;
+  editorState: EditorState;
+  valueTypeMessage: string;
+  valueMessage: string;
 }): ReactElement {
-  return <p>Constant Editor Unimplemented</p>;
+  const { dispatchUpdateEditorState } = useContext(DispatchContext);
+  const { isValid, messages } = checkConstantValue(
+    editorState.value,
+    editorState.valueType
+  );
+  const messageElement = isValid ? (
+    <React.Fragment />
+  ) : (
+    <React.Fragment>
+      {messages.map((m, index) => (
+        <p className="constant-error constant-error-message" key={index}>
+          {m}
+        </p>
+      ))}
+    </React.Fragment>
+  );
+  return (
+    <React.Fragment>
+      <label>
+        {valueTypeMessage}
+        <select
+          value={editorState.valueType}
+          onChange={(e) =>
+            dispatchUpdateEditorState({
+              ...editorState,
+              valueType: ExpectedValueTypeR.check(e.target.value),
+            })
+          }
+        >
+          {ExpectedValueTypeR.alternatives.map((valueType) => (
+            <option value={valueType.value} key={valueType.value}>
+              {expectedValueTypeProps[valueType.value].name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {valueMessage}
+        <textarea
+          lang={language}
+          value={editorState.value}
+          className={isValid ? undefined : "constant-error"}
+          onChange={(e) =>
+            dispatchUpdateEditorState({
+              ...editorState,
+              value: e.target.value,
+            })
+          }
+        />
+        {messageElement}
+      </label>
+    </React.Fragment>
+  );
+}
+
+function ConstantEditor({
+  language,
+  editorState,
+}: {
+  language: string;
+  editorState: EditorState;
+}): ReactElement {
+  return (
+    <ValueNodeEditor
+      language={language}
+      editorState={editorState}
+      valueMessage="Constant"
+      valueTypeMessage="Constant Type"
+    />
+  );
 }
 
 function ConstraintEditor({
   language,
-  value,
+  editorState,
 }: {
   language: string;
-  value: Network.PrimitiveActualType;
+  editorState: EditorState;
 }): ReactElement {
-  return <p>Constraint Editor Unimplemented</p>;
+  return (
+    <ValueNodeEditor
+      language={language}
+      editorState={editorState}
+      valueMessage="Constraint"
+      valueTypeMessage="Constraint Type"
+    />
+  );
 }
 
 function VisualizationEditor({
-  language,
-  visualization,
+  editorState,
 }: {
-  language: string;
-  visualization: Network.VisualizationType;
+  editorState: EditorState;
 }): ReactElement {
-  return <p>Visualization Editor Unimplemented</p>;
+  const { dispatchUpdateEditorState } = useContext(DispatchContext);
+  return (
+    <label>
+      Function
+      <select
+        value={editorState.visualization}
+        onChange={(e) =>
+          dispatchUpdateEditorState({
+            ...editorState,
+            visualization: Network.VisualizationTypeR.check(e.target.value),
+          })
+        }
+      >
+        {Network.VisualizationTypeR.alternatives.map((visT, index) => (
+          <option value={visT.value} key={index}>
+            {Network.visualizationProps[visT.value].name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 function NodeTypeSpecificPropertiesEditor({
@@ -494,37 +597,44 @@ function NodeTypeSpecificPropertiesEditor({
 }) {
   switch (editorState.type) {
     case "DistributionNode":
-      return (
-        <DistributionEditor language={language} editorState={editorState} />
-      );
+      return <DistributionEditor editorState={editorState} />;
     case "FunctionNode":
       return <FunctionEditor language={language} editorState={editorState} />;
     case "ConstantNode":
-      return <ConstantEditor language={language} value={editorState.value} />;
+      return <ConstantEditor language={language} editorState={editorState} />;
     case "ConstraintNode":
-      return <ConstraintEditor language={language} value={editorState.value} />;
+      return <ConstraintEditor language={language} editorState={editorState} />;
     case "VisualizationNode":
-      return (
-        <VisualizationEditor
-          language={language}
-          visualization={editorState.visualization}
-        />
-      );
+      return <VisualizationEditor editorState={editorState} />;
   }
 }
 
 const NodeEditor = ({
   language,
   editorState,
+  nodeTitles,
+  titleBeingEdited,
 }: {
   language: string;
   editorState: EditorState;
+  nodeTitles: string[];
+  titleBeingEdited: string;
 }) => {
   const {
     dispatchCancelNodeEdit,
     dispatchFinishNodeEdit,
     dispatchUpdateEditorState,
   } = useContext(DispatchContext);
+  const { isValid } = checkEditorState(
+    nodeTitles,
+    titleBeingEdited,
+    editorState
+  );
+  const titleCheck = checkTitle(
+    nodeTitles,
+    titleBeingEdited,
+    editorState.title
+  );
   function fieldUpdater(fieldName: string) {
     return (
       e:
@@ -561,8 +671,12 @@ const NodeEditor = ({
           <input
             lang={language}
             value={editorState.title}
+            className={titleCheck.isValid ? undefined : "constant-error"}
             onChange={fieldUpdater("title")}
           />
+          {titleCheck.isValid ? undefined : (
+            <p className="title-error-message">titleCheck.messages[0]</p>
+          )}
         </label>
         <label>
           Justification
@@ -576,7 +690,7 @@ const NodeEditor = ({
           Type
           <select value={editorState.type} onChange={fieldUpdater("type")}>
             {Network.NodeTypeR.alternatives.map((nodeType) => (
-              <option value={nodeType.value}>
+              <option value={nodeType.value} key={nodeType.value}>
                 {Network.nodeProps[nodeType.value].name}
               </option>
             ))}
@@ -586,7 +700,9 @@ const NodeEditor = ({
           language={language}
           editorState={editorState}
         />
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={!isValid}>
+          Submit
+        </button>
         <button onClick={() => dispatchCancelNodeEdit()}>Cancel</button>
       </form>
     </section>
@@ -639,10 +755,15 @@ const MainEditWindow = ({
   language: string;
 }) => {
   const diagram = () => <GraphEditor language={language} nodes={nodes} />;
-  const nodeEditor = () => (
-    <NodeEditor language={language} editorState={editorState} />
+  const nodeEditor = (toEdit: string) => (
+    <NodeEditor
+      language={language}
+      editorState={editorState}
+      nodeTitles={Object.keys(nodes)}
+      titleBeingEdited={toEdit}
+    />
   );
-  return singleNodeToEdit ? nodeEditor() : diagram();
+  return singleNodeToEdit ? nodeEditor(singleNodeToEdit) : diagram();
 };
 
 function graphDisplayHeight(nodes: Network.Nodes): number {
