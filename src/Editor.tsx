@@ -791,6 +791,13 @@ function graphDisplayHeight(nodes: Network.Nodes): number {
   return 150 + Math.max(...Object.values(nodes).map(topRightYCoord));
 }
 
+function editorDisplayHeight(
+  nodes: Network.Nodes,
+  singleNodeToEdit: string | null
+): number {
+  return singleNodeToEdit == null ? graphDisplayHeight(nodes) : 150;
+}
+
 const Editor = ({
   nodes,
   language,
@@ -809,11 +816,12 @@ const Editor = ({
   if (singleNodeToEdit != null && !(singleNodeToEdit in nodes)) {
     singleNodeToEdit = null;
   }
+  const editorHeight = editorDisplayHeight(nodes, singleNodeToEdit);
 
   return (
     <main
       className="editor"
-      style={{ gridTemplateRows: `15px ${graphDisplayHeight(nodes)}px 15px` }}
+      style={{ gridTemplateRows: `15px ${editorHeight}px 15px` }}
     >
       <header className="mainHead" lang={language}>
         {modelName}: Belief Workbench {version}
