@@ -1,4 +1,5 @@
 import {
+  addNode,
   cancelNodeEdit,
   deleteNode,
   finishNodeEdit,
@@ -10,6 +11,7 @@ import {
   WorkbenchReducer,
 } from "./workbench-reducers";
 import {
+  AddCommand,
   CancelNodeEditCommand,
   Command,
   CommandType,
@@ -30,6 +32,7 @@ const dispatchTable = createDispatchTable();
 function createDispatchTable() {
   let dispatchTable: DispatchTable = [];
   dispatchTable[CommandType.NoOp] = (state, _action) => state;
+  dispatchTable[CommandType.AddNode] = addNode;
   dispatchTable[CommandType.StartEditingNode] = startNodeEdit;
   dispatchTable[CommandType.CancelEditingNode] = cancelNodeEdit;
   dispatchTable[CommandType.FinishEditingNode] = finishNodeEdit;
@@ -47,6 +50,13 @@ function log(message: string) {
 
 export function createDispatchers(dispatch: React.Dispatch<Command>) {
   return {
+    dispatchAddNode: () => {
+      console.log("Add Node");
+      const cmd: AddCommand = {
+        type: CommandType.AddNode,
+      };
+      return dispatch(cmd);
+    },
     dispatchStartNodeEdit: (toEdit: string) => {
       const cmd: StartNodeEditCommand = {
         type: CommandType.StartEditingNode,

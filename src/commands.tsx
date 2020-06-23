@@ -2,6 +2,7 @@ import { EditorState } from "./editor-state";
 
 export enum CommandType {
   NoOp,
+  AddNode,
   StartEditingNode,
   CancelEditingNode,
   FinishEditingNode,
@@ -14,6 +15,10 @@ export enum CommandType {
 
 export interface Command {
   type: CommandType;
+}
+
+export interface AddCommand extends Command {
+  type: CommandType.AddNode;
 }
 
 export interface StartNodeEditCommand extends Command {

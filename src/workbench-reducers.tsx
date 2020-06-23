@@ -186,6 +186,45 @@ export type WorkbenchReducer = (
   state: WorkbenchState,
   action: Command
 ) => WorkbenchState;
+
+function defaultNodeWithUniqueTitle(
+  state: WorkbenchState
+): { newNode: Network.Node; newNodeTitle: string } {
+  const extantTitles = Object.keys(state.beliefs.nodes);
+  let i = 0;
+  let newNodeTitle;
+  do {
+    i += 1;
+    newNodeTitle = `Node ${i}`;
+  } while (extantTitles.includes(newNodeTitle));
+  return {
+    newNode: {
+      justification: "",
+      type: "ConstantNode",
+      coords: [100, 100],
+      valueType: "Number",
+      value: 0,
+    },
+    newNodeTitle: newNodeTitle,
+  };
+}
+
+export const addNode: WorkbenchReducer = (oldState, _action) => {
+  const { newNode, newNodeTitle } = defaultNodeWithUniqueTitle(oldState);
+  return Immutable.merge(oldState, {
+    currentlyEditing: newNodeTitle,
+    newProperties: {
+      ...editorProperties(newNode),
+      title: newNodeTitle,
+    },
+    beliefs: Immutable.merge(oldState.beliefs, {
+      nodes: Immutable.merge(oldState.beliefs.nodes, {
+        [newNodeTitle]: newNode,
+      }),
+    }),
+  });
+};
+
 export const startNodeEdit: WorkbenchReducer = (oldState, action) => {
   const toEdit = (action as StartNodeEditCommand).toEdit;
   return Immutable.merge(oldState, {

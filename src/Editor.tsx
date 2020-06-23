@@ -710,9 +710,10 @@ const NodeEditor = ({
 };
 
 function MainControls() {
+  const { dispatchAddNode } = useContext(DispatchContext);
   return (
     <nav className="main-controls">
-      <button disabled={true}>
+      <button onClick={(_e) => dispatchAddNode()}>
         <span role="img" aria-label="Add node">
           +
         </span>
