@@ -709,6 +709,23 @@ const NodeEditor = ({
   );
 };
 
+function MainControls() {
+  return (
+    <nav className="main-controls">
+      <button disabled={true}>
+        <span role="img" aria-label="Add node">
+          +
+        </span>
+      </button>
+      <button disabled={true}>
+        <span role="img" aria-label="Run simulation">
+          🏃
+        </span>
+      </button>
+    </nav>
+  );
+}
+
 function GraphEditor({
   language,
   nodes,
@@ -739,6 +756,7 @@ function GraphEditor({
           dispatchUnlinkNodes
         )}
       />
+      <MainControls />
     </section>
   );
 }
